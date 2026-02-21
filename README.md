@@ -1,19 +1,103 @@
-# 🏪 El Galpón - Sistema de Inventario
+# 🏪 El Galpón - Sistema de Gestión de Inventario
 
-Sistema de gestión de inventario para agropecuaria y veterinaria en Alcalá, Valle del Cauca, Colombia.
+Sistema completo de gestión de inventario para agropecuaria y veterinaria ubicada en Alcalá, Valle del Cauca, Colombia.
 
-## 🚀 Inicio Rápido
+---
 
-### Opción 1: Usando los scripts (RECOMENDADO)
+## 🚀 TECNOLOGÍAS
 
-1. **Hacer doble clic en** `INICIAR_SERVIDORES.bat`
-2. Esperar a que se abran las ventanas del backend y frontend
-3. Abrir el navegador en: `http://localhost:8080`
+### **Backend:**
+- Laravel 11+ (PHP 8.2+)
+- **MySQL 8.0+** ⚠️ (NO SQLite)
+- Laravel Sanctum (Autenticación)
+- Laravel Mail (Envío de emails)
 
-Para detener los servidores:
-- **Hacer doble clic en** `DETENER_SERVIDORES.bat`
+### **Frontend:**
+- React 18+
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui
+- Zustand (Estado global)
+- React Router DOM
 
-### Opción 2: Manual
+---
+
+## 📋 REQUISITOS PREVIOS
+
+Antes de clonar el proyecto, asegúrate de tener instalado:
+
+- ✅ **Git** → https://git-scm.com/download/win
+- ✅ **PHP 8.2+** → https://windows.php.net/download/
+- ✅ **Composer** → https://getcomposer.org/download/
+- ✅ **MySQL 8.0+** → https://dev.mysql.com/downloads/installer/ ⚠️ **IMPORTANTE**
+- ✅ **Node.js 18+** → https://nodejs.org/
+- ✅ **Editor de código** → VS Code o PHPStorm
+
+---
+
+## 🔧 INSTALACIÓN RÁPIDA
+
+### **1. Clonar el repositorio:**
+
+```bash
+git clone https://github.com/MJMV25/ElGalpon.git
+cd ElGalpon
+git checkout develop
+```
+
+### **2. Configurar MySQL:**
+
+Abre MySQL y crea la base de datos:
+
+```sql
+CREATE DATABASE elgalpon CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+### **3. Configurar Backend (Laravel):**
+
+```bash
+cd backend
+composer install
+copy .env.example .env
+php artisan key:generate
+```
+
+Edita `backend/.env` con tu configuración:
+
+```env
+# Base de datos MySQL
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=elgalpon
+DB_USERNAME=root
+DB_PASSWORD=tu-password-mysql
+
+# Configuración de correo (Gmail)
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=tu-email@gmail.com
+MAIL_PASSWORD="tu-app-password"
+MAIL_ENCRYPTION=tls
+```
+
+### **4. Migrar base de datos:**
+
+```bash
+php artisan migrate
+php artisan db:seed
+```
+
+### **5. Configurar Frontend (React):**
+
+```bash
+cd ../galp-n-inventory-hub
+npm install
+```
+
+### **6. Iniciar servidores:**
 
 **Terminal 1 - Backend:**
 ```bash
@@ -27,177 +111,104 @@ cd galp-n-inventory-hub
 npm run dev
 ```
 
-## 📦 Estructura del Proyecto
+### **7. Acceder:**
+
+Abre http://localhost:8080 e inicia sesión con cualquiera de estos emails:
+
+- `manuela.gomez@elgalpon-alcala.com` (Admin)
+- `carlos.gomez@elgalpon-alcala.com` (Admin)
+- `mjmunoz_108@cue.edu.co` (Admin)
+- `sgomez_21@cue.edu.co` (Admin)
+- `sebastian.rodriguez@elgalpon-alcala.com` (Empleado)
+
+**Recibirás un código de 6 dígitos en tu correo para iniciar sesión.**
+
+---
+
+## 📚 DOCUMENTACIÓN
+
+| Archivo | Descripción |
+|---------|-------------|
+| **`INICIO_RAPIDO.md`** | Guía completa paso a paso |
+| **`GIT_WORKFLOW.md`** | Cómo trabajar con Git |
+| **`ASIGNACION_TAREAS.md`** | División de trabajo |
+| **`RESUMEN_GIT.md`** | Estado actual del proyecto |
+
+---
+
+## 📂 ESTRUCTURA
 
 ```
 ElGalpon/
-├── backend/              # Laravel 11 - API REST
-│   ├── app/
-│   ├── database/
-│   │   └── database.sqlite  # Base de datos SQLite
-│   └── routes/
-│       └── api.php
-│
-├── galp-n-inventory-hub/ # React + TypeScript - Frontend
-│   ├── src/
-│   │   ├── pages/        # Páginas de la aplicación
-│   │   ├── services/     # Servicios para API
-│   │   ├── store/        # Zustand stores
-│   │   └── lib/
-│   │       └── api.ts    # Configuración de Axios
-│   └── .env              # Variables de entorno
-│
-├── INICIAR_SERVIDORES.bat  # Script para iniciar todo
-└── DETENER_SERVIDORES.bat  # Script para detener todo
+├── backend/              # API Laravel + MySQL
+├── galp-n-inventory-hub/ # Frontend React + TypeScript
+├── GIT_WORKFLOW.md       # Guía Git
+├── INICIO_RAPIDO.md      # Setup completo
+└── README.md             # Este archivo
 ```
 
-## 🔑 Acceso
+---
 
-### Usuarios por defecto:
+## 🌿 RAMAS
 
-| Email | Rol | Contraseña |
-|-------|-----|------------|
-| mjmunoz_108@cue.edu.co | Admin | Código OTP por email |
-| sgomez_21@cue.edu.co | Admin | Código OTP por email |
-| carlos.gomez@elgalpon-alcala.com | Admin | Código OTP por email |
-| sebastian.rodriguez@elgalpon-alcala.com | Empleado | Código OTP por email |
-
-> **Nota:** El sistema usa autenticación por código de 6 dígitos enviado al email.
-
-## 🛠️ Tecnologías
-
-### Backend
-- **Framework:** Laravel 11
-- **Base de Datos:** SQLite
-- **Autenticación:** Laravel Sanctum + OTP Email
-- **Email:** Mailtrap (desarrollo)
-
-### Frontend
-- **Framework:** React 18 + TypeScript
-- **Routing:** React Router v6
-- **HTTP Client:** Axios
-- **State Management:** Zustand
-- **UI:** Tailwind CSS + shadcn/ui
-- **Validación:** Zod
-
-## 🔧 Configuración
-
-### Backend (.env)
-```env
-APP_URL=http://localhost:8000
-DB_CONNECTION=sqlite
-
-MAIL_MAILER=smtp
-MAIL_HOST=sandbox.smtp.mailtrap.io
-MAIL_PORT=2525
-MAIL_USERNAME=tu_username
-MAIL_PASSWORD=tu_password
+```
+main (producción)
+└── develop (desarrollo) ⭐
+    └── feature/* (funcionalidades)
 ```
 
-### Frontend (.env)
-```env
-VITE_API_URL=http://localhost:8000/api
-VITE_APP_NAME="El Galpón"
-```
+---
 
-## 📊 Base de Datos
+## 📦 MÓDULOS
 
-La base de datos SQLite está en: `backend/database/database.sqlite`
+### **✅ Implementados:**
+- Autenticación por email
+- Gestión de usuarios
+- Dashboard
+- Productos y categorías
+- Proveedores
+- Cotizaciones
 
-### Ver datos:
-```bash
-cd backend
-php artisan tinker
-```
+### **🚧 En desarrollo:**
+- Inventario (movimientos)
+- Reportes avanzados
+- Notificaciones
+- Pagos a proveedores
 
-```php
-// Ver usuarios
-App\Models\User::all();
+---
 
-// Contar usuarios
-App\Models\User::count();
+## 🔗 ENLACES
 
-// Ver proveedores
-App\Models\Proveedor::all();
-
-// Ver productos
-App\Models\Producto::all();
-```
-
-### Herramientas recomendadas:
-- **DB Browser for SQLite** (gratuito)
-- **DBeaver** (gratuito)
-- **TablePlus** (gratis con limitaciones)
-
-## 🐛 Solución de Problemas
-
-### El frontend no carga usuarios
-
-1. Verificar que el backend esté corriendo:
-   ```bash
-   curl http://localhost:8000/api/usuarios
-   ```
-
-2. Verificar que estés autenticado:
-   - Abre DevTools (F12)
-   - Application → Local Storage
-   - Debe existir `auth_token`
-
-3. Limpiar caché del navegador:
-   - Ctrl + Shift + R (hard refresh)
-   - O limpiar Local Storage completamente
-
-### Error de CORS
-
-Si ves errores de CORS en la consola:
-
-1. Verificar que el backend tenga CORS configurado
-2. Verificar que `VITE_API_URL` sea correcto
-3. Reiniciar ambos servidores
-
-### Puerto en uso
-
-Si el puerto 8000 u 8080 ya está en uso:
-
-**Windows:**
-```bash
-# Ver qué usa el puerto 8000
-netstat -ano | findstr :8000
-
-# Matar el proceso (reemplaza PID)
-taskkill /PID <PID> /F
-```
-
-## 📱 URLs
-
+- **Repositorio:** https://github.com/MJMV25/ElGalpon
+- **Backend:** http://localhost:8000/api
 - **Frontend:** http://localhost:8080
-- **Backend API:** http://localhost:8000/api
-- **Backend Health:** http://localhost:8000/up
 
-## 👥 Roles y Permisos
+---
 
-### Administrador
-- ✅ Gestionar usuarios
-- ✅ Agregar/editar/eliminar productos
-- ✅ Gestionar proveedores
-- ✅ Gestionar cotizaciones
-- ✅ Ver reportes
-- ✅ Configuración del sistema
+## 🆘 PROBLEMAS COMUNES
 
-### Empleado
-- ✅ Ver inventario
-- ❌ Agregar productos
-- ❌ Editar productos
-- ❌ Eliminar productos
-- ✅ Ver proveedores
-- ❌ Gestionar proveedores
-- ✅ Ver cotizaciones (solo lectura)
-- ❌ Gestionar usuarios
-- ❌ Configuración
+### **No llega el código al correo:**
+- Usa App Password de Gmail: https://myaccount.google.com/apppasswords
 
-## 📧 Contacto
+### **Error de base de datos:**
+- Verifica que MySQL esté corriendo
+- Verifica credenciales en `.env`
 
-**Desarrollador:** GitHub Copilot
-**Cliente:** El Galpón - Alcalá, Valle del Cauca
-**Año:** 2026
+### **Puerto en uso:**
+```bash
+Stop-Process -Name php -Force
+```
+
+---
+
+## 👥 EQUIPO
+
+- Manuel Villalobos - Full Stack Developer
+- [Compañero] - Full Stack Developer
+
+---
+
+**Última actualización:** 2026-02-21  
+**Base de datos:** MySQL 8.0+  
+**Repositorio:** https://github.com/MJMV25/ElGalpon
 

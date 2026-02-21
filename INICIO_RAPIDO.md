@@ -22,8 +22,8 @@ Antes de empezar, asegúrate de tener instalado:
 ## 🔧 PASO 1: CLONAR EL REPOSITORIO
 
 ```powershell
-# Clonar desde GitHub (reemplazar con la URL real)
-git clone https://github.com/TU-USUARIO/ElGalpon.git
+# Clonar desde GitHub
+git clone https://github.com/MJMV25/ElGalpon.git
 
 # Entrar al directorio
 cd ElGalpon
@@ -46,7 +46,9 @@ git branch
 
 ---
 
-## 🗄️ PASO 2: CONFIGURAR BASE DE DATOS
+## 🗄️ PASO 2: CONFIGURAR BASE DE DATOS (MYSQL - IMPORTANTE)
+
+⚠️ **NOTA IMPORTANTE:** Este proyecto usa **MySQL 8.0+**, NO SQLite. Asegúrate de tener MySQL instalado.
 
 ### **Abrir MySQL:**
 

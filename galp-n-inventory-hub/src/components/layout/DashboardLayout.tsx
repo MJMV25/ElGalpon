@@ -27,10 +27,10 @@ const DashboardLayout = () => {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="lg:ml-[280px] flex flex-col min-h-screen">
         <Header title={title} onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
           <Outlet />
         </main>
-        <footer className="text-center text-xs text-muted-foreground py-3 border-t border-border">
+        <footer className="text-center text-xs text-muted-foreground py-3 border-t border-border px-4">
           El Galpón - Sistema de Inventario © 2026 • Alcalá, Valle del Cauca
         </footer>
       </div>

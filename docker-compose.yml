@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # Base de datos MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: elgalpon_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: elgalpon
+      MYSQL_USER: elgalpon_user
+      MYSQL_PASSWORD: elgalpon_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Para importar el backup inicial
+      - ./backend/database/backup:/docker-entrypoint-initdb.d
+    networks:
+      - elgalpon_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Backend Laravel
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: elgalpon_backend
+    restart: unless-stopped
+    environment:
+      APP_NAME: "El Galpón"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: elgalpon
+      DB_USERNAME: elgalpon_user
+      DB_PASSWORD: elgalpon_pass
+      MAIL_MAILER: smtp
+      MAIL_HOST: smtp.gmail.com
+      MAIL_PORT: 587
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: tls
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: "El Galpón"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/var/www/html
+      - backend_storage:/var/www/html/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - elgalpon_network
+
+  # Frontend React
+  frontend:
+    build:
+      context: ./galp-n-inventory-hub
+      dockerfile: Dockerfile
+    container_name: elgalpon_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - elgalpon_network
+
+networks:
+  elgalpon_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  backend_storage:
+    driver: local
+

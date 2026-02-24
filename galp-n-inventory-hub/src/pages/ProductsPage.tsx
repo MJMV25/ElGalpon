@@ -19,19 +19,25 @@ const ProductsPage = () => {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Gestión de Productos</h1>
-          <p className="text-sm text-muted-foreground">Administra todos los productos del inventario</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestión de Productos</h1>
+          <p className="text-sm text-muted-foreground mt-1">Administra todos los productos del inventario</p>
         </div>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground flex items-center gap-1.5 hover:bg-muted">
-            <Download className="w-4 h-4" /> Exportar
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground flex items-center justify-center gap-1.5 hover:bg-muted transition-colors">
+            <Download className="w-4 h-4" />
+            <span className="hidden xs:inline">Exportar</span>
           </button>
           {isAdmin && (
-            <button onClick={() => navigate('/productos/nuevo')} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
-              <Plus className="w-4 h-4" /> Nuevo Producto
+            <button
+              onClick={() => navigate('/productos/nuevo')}
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden xs:inline">Nuevo</span>
+              <span className="xs:hidden">Agregar</span>
             </button>
           )}
         </div>

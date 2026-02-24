@@ -193,12 +193,14 @@ const UsersPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-4 sm:p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Gestión de Usuarios</h1>
-          <p className="text-sm text-muted-foreground">
-            Administra los usuarios del sistema ({users.length} usuarios)
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestión de Usuarios</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Administra los usuarios del sistema
+            {users.length > 0 && <span className="ml-1">• {users.length} {users.length === 1 ? 'usuario' : 'usuarios'}</span>}
           </p>
         </div>
 
@@ -206,41 +208,48 @@ const UsersPage = () => {
           <button
             onClick={loadUsers}
             disabled={isLoading}
-            className="p-2 rounded-lg border border-input hover:bg-muted disabled:opacity-50"
+            className="p-2 sm:p-2.5 rounded-lg border border-input hover:bg-muted disabled:opacity-50 transition-colors"
             title="Recargar"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <button
             onClick={handleOpenNewModal}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity text-sm sm:text-base font-medium"
           >
             <UserPlus className="w-4 h-4" />
-            Agregar Usuario
+            <span className="hidden xs:inline">Agregar</span>
+            <span className="xs:hidden">Nuevo</span>
           </button>
         </div>
       </div>
 
       {/* Estado de carga */}
       {isLoading && (
-        <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="flex items-center justify-center h-48 sm:h-64">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 sm:w-16 sm:h-16 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground text-sm">Cargando usuarios...</p>
+          </div>
         </div>
       )}
 
       {/* Error */}
       {error && !isLoading && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-lg text-center">
-          <p className="font-semibold mb-2">{error}</p>
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 sm:p-6 rounded-lg">
+          <p className="font-semibold mb-3 text-sm sm:text-base">{error}</p>
           {error.includes('sesión') || error.includes('autenticado') ? (
             <button
               onClick={() => window.location.href = '/login'}
-              className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90"
+              className="w-full sm:w-auto px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 text-sm font-medium"
             >
               Ir a Login
             </button>
           ) : (
-            <button onClick={loadUsers} className="underline hover:no-underline">
+            <button
+              onClick={loadUsers}
+              className="text-sm underline hover:no-underline font-medium"
+            >
               Reintentar
             </button>
           )}
@@ -252,48 +261,86 @@ const UsersPage = () => {
         <div className="space-y-3">
           {users.length > 0 ? (
             users.map(u => (
-              <div key={u.id} className="bg-card rounded-xl border border-border p-4 flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-primary-foreground font-bold ${u.activo ? 'bg-primary' : 'bg-muted-foreground'}`}>
-                  {getInitials(u.nombre)}
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-foreground flex items-center gap-2">
-                    {u.nombre}
-                    {u.id === currentUser?.id && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Tú</span>
-                    )}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{u.email}</p>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${u.rol === 'admin' ? 'bg-warning/10 text-warning' : 'bg-info/10 text-info'}`}>
-                  {u.rol === 'admin' ? '👑 Administrador' : '👤 Empleado'}
-                </span>
-                <span className={`flex items-center gap-1.5 text-xs ${u.activo ? 'text-success' : 'text-muted-foreground'}`}>
-                  <span className={`w-2 h-2 rounded-full ${u.activo ? 'bg-success' : 'bg-destructive'}`} />
-                  {u.activo ? 'Activo' : 'Inactivo'}
-                </span>
+              <div key={u.id} className="bg-card rounded-xl border border-border p-4 sm:p-5">
+                {/* Layout móvil y desktop */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  {/* Avatar y nombre */}
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-primary-foreground font-bold text-lg ${u.activo ? 'bg-primary' : 'bg-muted-foreground'}`}>
+                      {getInitials(u.nombre)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-foreground text-base sm:text-lg truncate">
+                          {u.nombre}
+                        </p>
+                        {u.id === currentUser?.id && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                            Tú
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">{u.email}</p>
+                    </div>
+                  </div>
 
-                <div className="flex gap-1">
-                  <button onClick={() => handleOpenEditModal(u)} className="p-2 rounded-lg hover:bg-muted text-muted-foreground" title="Editar">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => handleToggleActivo(u)} className={`p-2 rounded-lg hover:bg-muted disabled:opacity-50 ${u.activo ? 'text-warning' : 'text-success'}`} title={u.activo ? 'Desactivar' : 'Activar'} disabled={u.id === currentUser?.id}>
-                    {u.activo ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                  </button>
-                  <button onClick={() => handleOpenDeleteModal(u)} className="p-2 rounded-lg hover:bg-muted text-destructive disabled:opacity-50" title="Eliminar" disabled={u.id === currentUser?.id}>
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {/* Badges y acciones */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+                    {/* Badges */}
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${u.rol === 'admin' ? 'bg-warning/10 text-warning' : 'bg-info/10 text-info'}`}>
+                        {u.rol === 'admin' ? '👑 Admin' : '👤 Empleado'}
+                      </span>
+                      <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${u.activo ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${u.activo ? 'bg-success' : 'bg-destructive'}`} />
+                        {u.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+
+                    {/* Acciones */}
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleOpenEditModal(u)}
+                        className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        title="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleActivo(u)}
+                        className={`p-2 rounded-lg hover:bg-muted disabled:opacity-50 transition-colors ${u.activo ? 'text-warning hover:text-warning' : 'text-success hover:text-success'}`}
+                        title={u.activo ? 'Desactivar' : 'Activar'}
+                        disabled={u.id === currentUser?.id}
+                      >
+                        {u.activo ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                      </button>
+                      <button
+                        onClick={() => handleOpenDeleteModal(u)}
+                        className="p-2 rounded-lg hover:bg-muted text-destructive hover:text-destructive disabled:opacity-50 transition-colors"
+                        title="Eliminar"
+                        disabled={u.id === currentUser?.id}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))
           ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              No hay usuarios registrados
-              <p className="mt-2">
-                <button onClick={handleOpenNewModal} className="text-primary underline">
-                  Crear el primer usuario
-                </button>
+            <div className="text-center py-16 sm:py-24">
+              <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-muted flex items-center justify-center mb-4">
+                <UserPlus className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground mb-4 text-sm sm:text-base">
+                No hay usuarios registrados
               </p>
+              <button
+                onClick={handleOpenNewModal}
+                className="text-primary underline hover:no-underline font-medium text-sm sm:text-base"
+              >
+                Crear el primer usuario
+              </button>
             </div>
           )}
         </div>
@@ -301,52 +348,55 @@ const UsersPage = () => {
 
       {/* Modal para crear/editar usuario */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-foreground">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl border border-border p-5 sm:p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground">
                 {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
               </h2>
-              <button onClick={handleCloseModal} className="p-1 hover:bg-muted rounded-lg">
+              <button
+                onClick={handleCloseModal}
+                className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Nombre completo</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Nombre completo</label>
                 <input
                   type="text"
                   value={formData.nombre}
                   onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground"
+                  className="w-full px-3 py-2.5 sm:py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm sm:text-base"
                   placeholder="Ej: Juan Pérez"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Correo electrónico</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Correo electrónico</label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground"
+                  className="w-full px-3 py-2.5 sm:py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm sm:text-base disabled:opacity-60"
                   placeholder="correo@ejemplo.com"
                   required
                   disabled={!!editingUser}
                 />
                 {editingUser && (
-                  <p className="text-xs text-muted-foreground mt-1">El correo no se puede modificar</p>
+                  <p className="text-xs text-muted-foreground mt-1.5">El correo no se puede modificar</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Rol</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Rol</label>
                 <select
                   value={formData.rol}
                   onChange={e => setFormData({ ...formData, rol: e.target.value as 'admin' | 'empleado' })}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground"
+                  className="w-full px-3 py-2.5 sm:py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm sm:text-base"
                 >
                   <option value="empleado">👤 Empleado</option>
                   <option value="admin">👑 Administrador</option>
@@ -354,20 +404,29 @@ const UsersPage = () => {
               </div>
 
               {!editingUser && (
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">
+                <div className="p-3 sm:p-4 bg-muted rounded-lg">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     ℹ️ Al crear el usuario, se enviará un correo de bienvenida con instrucciones para iniciar sesión.
                   </p>
                 </div>
               )}
 
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={handleCloseModal} className="flex-1 px-4 py-2 border border-input rounded-lg hover:bg-muted">
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 px-4 py-2.5 sm:py-3 border border-input rounded-lg hover:bg-muted transition-colors text-sm sm:text-base font-medium"
+                  disabled={isSubmitting}
+                >
                   Cancelar
                 </button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2.5 sm:py-3 bg-primary text-primary-foreground rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-sm sm:text-base font-medium"
+                >
+                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {editingUser ? 'Actualizar' : 'Crear'}
                 </button>
               </div>
             </form>
@@ -377,25 +436,38 @@ const UsersPage = () => {
 
       {/* Modal de confirmación de eliminación */}
       {isDeleteModalOpen && deletingUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md mx-4">
-            <div className="text-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-3">
-                <Trash2 className="w-6 h-6 text-destructive" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl border border-border p-5 sm:p-6 w-full max-w-md shadow-2xl">
+            <div className="mb-5">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 sm:w-7 sm:h-7 text-destructive" />
               </div>
-              <h2 className="text-lg font-bold text-foreground">Eliminar Usuario</h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                ¿Estás seguro de que deseas eliminar a <strong>{deletingUser.nombre}</strong>?
-                Esta acción no se puede deshacer.
+              <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-2">
+                Eliminar Usuario
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground text-center">
+                ¿Estás seguro de que deseas eliminar a{' '}
+                <span className="font-semibold text-foreground">{deletingUser.nombre}</span>?
+              </p>
+              <p className="text-xs sm:text-sm text-destructive text-center mt-2">
+                Esta acción no se puede deshacer
               </p>
             </div>
 
             <div className="flex gap-3">
-              <button onClick={handleCloseDeleteModal} className="flex-1 px-4 py-2 border border-input rounded-lg hover:bg-muted">
+              <button
+                onClick={handleCloseDeleteModal}
+                className="flex-1 px-4 py-2.5 sm:py-3 border border-input rounded-lg hover:bg-muted transition-colors disabled:opacity-50 text-sm sm:text-base font-medium"
+                disabled={isSubmitting}
+              >
                 Cancelar
               </button>
-              <button onClick={handleDelete} disabled={isSubmitting} className="flex-1 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              <button
+                onClick={handleDelete}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2.5 sm:py-3 bg-destructive text-destructive-foreground rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-sm sm:text-base font-medium"
+              >
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 Eliminar
               </button>
             </div>

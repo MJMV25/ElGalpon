@@ -19,12 +19,15 @@ class CotizacionRespuesta extends Model
         'cantidad_disponible',
         'tiempo_entrega_dias',
         'notas',
+        'es_producto_extra',
+        'nombre_producto_extra',
     ];
 
     protected function casts(): array
     {
         return [
             'precio_unitario' => 'decimal:2',
+            'es_producto_extra' => 'boolean',
         ];
     }
 

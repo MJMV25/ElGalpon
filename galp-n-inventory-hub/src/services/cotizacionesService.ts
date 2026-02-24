@@ -52,7 +52,7 @@ export interface CotizacionProveedorDetalle {
 }
 
 export interface ProductoRespuesta {
-  cotizacion_producto_id: number;
+  cotizacion_producto_id: number | null;
   nombre_producto: string;
   cantidad: number;
   unidad: string;
@@ -61,6 +61,7 @@ export interface ProductoRespuesta {
   disponibilidad: number | null;
   tiempo_entrega: number | null;
   observaciones: string | null;
+  es_producto_extra?: boolean;
 }
 
 // Interfaces para crear cotización

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Producto;
+use App\Models\Proveedor;
 use App\Models\MovimientoInventario;
 use App\Models\LogActividad;
 use App\Models\Notificacion;
@@ -230,6 +231,7 @@ class ProductoController extends Controller
             $producto->save();
 
             // Registrar movimiento
+            $precioCompra = $validated['precio_compra'] ?? $producto->precio_compra;
             MovimientoInventario::create([
                 'producto_id' => $producto->id,
                 'user_id' => auth()->id(),
@@ -238,10 +240,20 @@ class ProductoController extends Controller
                 'cantidad' => $validated['cantidad'],
                 'stock_anterior' => $stockAnterior,
                 'stock_nuevo' => $producto->stock,
-                'precio_compra' => $validated['precio_compra'] ?? $producto->precio_compra,
+                'precio_compra' => $precioCompra,
                 'lote' => $validated['lote'] ?? null,
                 'notas' => $validated['notas'] ?? null,
             ]);
+
+            // Incrementar deuda del proveedor si hay proveedor y precio de compra
+            $proveedorId = $validated['proveedor_id'] ?? $producto->proveedor_id;
+            if ($proveedorId && $precioCompra > 0) {
+                $montoTotal = $precioCompra * $validated['cantidad'];
+                $proveedor = Proveedor::find($proveedorId);
+                if ($proveedor) {
+                    $proveedor->incrementarDeuda($montoTotal);
+                }
+            }
         });
 
         // Registrar actividad

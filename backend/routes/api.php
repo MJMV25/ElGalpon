@@ -64,9 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Proveedores (lectura para todos)
     Route::get('/proveedores', [ProveedorController::class, 'index']);
-    Route::get('/proveedores/resumen-deudas', [ProveedorController::class, 'resumenDeudas']);
     Route::get('/proveedores/{proveedor}', [ProveedorController::class, 'show']);
-    Route::get('/proveedores/{proveedor}/pagos', [ProveedorController::class, 'historialPagos']);
 
     // Cotizaciones (lectura para todos)
     Route::get('/cotizaciones', [CotizacionController::class, 'index']);
@@ -80,7 +78,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/movimientos', [ReporteController::class, 'movimientos']);
         Route::get('/productos-por-categoria', [ReporteController::class, 'productosPorCategoria']);
         Route::get('/productos-mas-movidos', [ReporteController::class, 'productosMasMovidos']);
-        Route::get('/deudas-proveedores', [ReporteController::class, 'deudasProveedores']);
         Route::get('/stock-alerta', [ReporteController::class, 'stockAlerta']);
     });
 
@@ -108,9 +105,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/proveedores', [ProveedorController::class, 'store']);
         Route::put('/proveedores/{proveedor}', [ProveedorController::class, 'update']);
         Route::delete('/proveedores/{proveedor}', [ProveedorController::class, 'destroy']);
-        Route::post('/proveedores/{proveedor}/incrementar-deuda', [ProveedorController::class, 'incrementarDeuda']);
-        Route::post('/proveedores/{proveedor}/pago', [ProveedorController::class, 'registrarPago']);
-        Route::post('/proveedores/{proveedor}/recordatorio', [ProveedorController::class, 'enviarRecordatorio']);
 
         // Gestión de cotizaciones
         Route::post('/cotizaciones', [CotizacionController::class, 'store']);

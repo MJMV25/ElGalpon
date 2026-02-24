@@ -8,7 +8,7 @@ export interface Proveedor {
   telefono: string | null;
   direccion: string | null;
   ciudad: string | null;
-  deuda_total: number;
+  deuda: number;  // Campo correcto que retorna el backend
   calificacion: number | null;
   notas: string | null;
   activo: boolean;

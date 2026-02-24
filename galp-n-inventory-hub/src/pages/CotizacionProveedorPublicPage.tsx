@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Loader2, FileSpreadsheet, Send, Upload, CheckCircle, AlertCircle, Calendar, Package, Building2 } from 'lucide-react';
+import { Loader2, FileSpreadsheet, Send, Upload, CheckCircle, AlertCircle, Calendar, Package, Building2, Plus, X } from 'lucide-react';
 import cotizacionPublicaService, { CotizacionPublicaData, RespuestaProducto } from '@/services/cotizacionPublicaService';
 
 const CotizacionProveedorPublicPage = () => {
@@ -14,8 +14,12 @@ const CotizacionProveedorPublicPage = () => {
   const [enviado, setEnviado] = useState(false);
 
   // Estado para formulario web
-  const [respuestas, setRespuestas] = useState<Record<number, RespuestaProducto>>({});
+  const [respuestas, setRespuestas] = useState<Record<number | string, RespuestaProducto>>({});
   const [notasGenerales, setNotasGenerales] = useState('');
+
+  // Estado para productos extra
+  const [productosExtra, setProductosExtra] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [contadorProductosExtra, setContadorProductosExtra] = useState(0);
 
   // Estado para upload de Excel
   const [archivoExcel, setArchivoExcel] = useState<File | null>(null);
@@ -151,6 +155,16 @@ const CotizacionProveedorPublicPage = () => {
       return;
     }
 
+    // Validar que los productos extra tengan nombre
+    const productosExtraInvalidos = respuestasArray.filter(r =>
+      r.es_producto_extra && (!r.nombre_producto_extra || r.nombre_producto_extra.trim() === '')
+    );
+
+    if (productosExtraInvalidos.length > 0) {
+      toast.error('Por favor, complete el nombre de todos los productos extra');
+      return;
+    }
+
     try {
       setEnviando(true);
       const response = await cotizacionPublicaService.enviarRespuestaWeb(
@@ -173,7 +187,7 @@ const CotizacionProveedorPublicPage = () => {
     }
   };
 
-  const actualizarRespuesta = (productoId: number, campo: keyof RespuestaProducto, valor: any) => {
+  const actualizarRespuesta = (productoId: number | string, campo: keyof RespuestaProducto, valor: any) => {
     setRespuestas(prev => ({
       ...prev,
       [productoId]: {
@@ -181,6 +195,43 @@ const CotizacionProveedorPublicPage = () => {
         [campo]: valor,
       },
     }));
+  };
+
+  const agregarProductoExtra = () => {
+    const nuevoId = `extra_${contadorProductosExtra}`;
+    setContadorProductosExtra(prev => prev + 1);
+
+    setProductosExtra(prev => [...prev, { id: nuevoId, nombre: '' }]);
+
+    setRespuestas(prev => ({
+      ...prev,
+      [nuevoId]: {
+        cotizacion_producto_id: null,
+        precio_unitario: 0,
+        cantidad_disponible: 1,
+        tiempo_entrega_dias: 0,
+        notas: '',
+        es_producto_extra: true,
+        nombre_producto_extra: '',
+      },
+    }));
+
+    toast.success('Producto extra agregado');
+  };
+
+  const eliminarProductoExtra = (id: string) => {
+    setProductosExtra(prev => prev.filter(p => p.id !== id));
+    setRespuestas(prev => {
+      const nuevo = { ...prev };
+      delete nuevo[id];
+      return nuevo;
+    });
+    toast.success('Producto extra eliminado');
+  };
+
+  const actualizarNombreProductoExtra = (id: string, nombre: string) => {
+    setProductosExtra(prev => prev.map(p => p.id === id ? { ...p, nombre } : p));
+    actualizarRespuesta(id, 'nombre_producto_extra', nombre);
   };
 
   if (loading) {
@@ -255,7 +306,7 @@ const CotizacionProveedorPublicPage = () => {
               <Building2 className="w-5 h-5 text-primary" />
               <div>
                 <p className="text-sm text-muted-foreground">Proveedor</p>
-                <p className="font-semibold text-foreground">{cotizacion.proveedor.nombre}</p>
+                <p className="font-semibold text-foreground">{cotizacion.proveedor.nombre_empresa}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -524,6 +575,138 @@ const CotizacionProveedorPublicPage = () => {
                   </div>
                 </div>
               ))}
+
+              {/* Sección de Productos Extra */}
+              <div className="border-t-2 border-primary/20 pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                      <Plus className="w-5 h-5 text-primary" />
+                      Productos Extra
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Agregue productos adicionales que desee ofrecer (opcionales)
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={agregarProductoExtra}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition font-medium flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Agregar Producto
+                  </button>
+                </div>
+
+                {productosExtra.length === 0 ? (
+                  <div className="text-center py-8 bg-muted/30 rounded-lg border-2 border-dashed border-border">
+                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      No hay productos extra agregados
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Use el botón "Agregar Producto" para ofrecer productos adicionales
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {productosExtra.map((productoExtra, index) => (
+                      <div key={productoExtra.id} className="p-4 border-2 border-warning/30 bg-warning/5 rounded-lg relative">
+                        <div className="absolute -top-3 left-3 px-3 py-1 bg-warning text-warning-foreground rounded-full text-xs font-bold">
+                          PRODUCTO EXTRA
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => eliminarProductoExtra(productoExtra.id)}
+                          className="absolute -top-2 -right-2 w-7 h-7 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition"
+                          title="Eliminar producto extra"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+
+                        <div className="flex items-start gap-3 mb-4 mt-2">
+                          <span className="flex-shrink-0 w-8 h-8 bg-warning text-warning-foreground rounded-full flex items-center justify-center font-bold text-sm">
+                            +{index + 1}
+                          </span>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Nombre del Producto <span className="text-destructive">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={respuestas[productoExtra.id]?.nombre_producto_extra || ''}
+                              onChange={(e) => actualizarNombreProductoExtra(productoExtra.id, e.target.value)}
+                              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-warning bg-background text-foreground"
+                              placeholder="Ej: Fertilizante Orgánico Premium 50kg"
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Precio Unitario (COP) <span className="text-destructive">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={respuestas[productoExtra.id]?.precio_unitario || ''}
+                              onChange={(e) => actualizarRespuesta(productoExtra.id, 'precio_unitario', parseFloat(e.target.value) || 0)}
+                              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-warning bg-background text-foreground"
+                              placeholder="Ej: 50000"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Cantidad Disponible
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={respuestas[productoExtra.id]?.cantidad_disponible || ''}
+                              onChange={(e) => actualizarRespuesta(productoExtra.id, 'cantidad_disponible', parseInt(e.target.value) || 1)}
+                              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-warning bg-background text-foreground"
+                              placeholder="Ej: 100"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Tiempo de Entrega (días)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={respuestas[productoExtra.id]?.tiempo_entrega_dias || ''}
+                              onChange={(e) => actualizarRespuesta(productoExtra.id, 'tiempo_entrega_dias', parseInt(e.target.value) || 0)}
+                              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-warning bg-background text-foreground"
+                              placeholder="Ej: 5"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Observaciones
+                            </label>
+                            <input
+                              type="text"
+                              value={respuestas[productoExtra.id]?.notas || ''}
+                              onChange={(e) => actualizarRespuesta(productoExtra.id, 'notas', e.target.value)}
+                              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-warning bg-background text-foreground"
+                              placeholder="Ej: Producto en oferta especial"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">

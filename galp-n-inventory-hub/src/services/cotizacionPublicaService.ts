@@ -19,7 +19,9 @@ export interface CotizacionPublicaData {
     fecha_limite: string;
   };
   proveedor: {
-    nombre: string;
+    nombre_empresa: string;
+    nit: string;
+    nombre_asesor: string;
   };
   productos: Array<{
     id: number;
@@ -31,11 +33,13 @@ export interface CotizacionPublicaData {
 }
 
 export interface RespuestaProducto {
-  cotizacion_producto_id: number;
+  cotizacion_producto_id: number | null;
   precio_unitario: number;
   cantidad_disponible?: number;
   tiempo_entrega_dias?: number;
   notas?: string;
+  es_producto_extra?: boolean;
+  nombre_producto_extra?: string;
 }
 
 const cotizacionPublicaService = {

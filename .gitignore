@@ -48,6 +48,11 @@ backend/storage/framework/testing/*
 !backend/storage/framework/views/.gitkeep
 !backend/storage/framework/testing/.gitkeep
 backend/storage/app/public/*
+
+# Backups de base de datos (excepto el principal para Docker)
+backend/database/backup/*
+!backend/database/backup/backup.sql
+!backend/database/backup/.gitkeep
 !backend/storage/app/public/.gitkeep
 
 # Database
@@ -102,6 +107,13 @@ galp-n-inventory-hub/bun.lockb
 *.backup
 output.txt
 server.log
+
+# ===========================
+# DOCKER
+# ===========================
+.env
+.env.docker
+docker-compose.override.yml
 
 # ===========================
 # ARCHIVOS TEMPORALES

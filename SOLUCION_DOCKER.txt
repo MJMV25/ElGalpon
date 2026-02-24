@@ -1,0 +1,100 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║  ⚠️  DOCKER DESKTOP INSTALADO PERO NO ESTÁ CORRIENDO  ⚠️    ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+📋 PASOS PARA SOLUCIONAR:
+
+1️⃣  ABRIR DOCKER DESKTOP
+   ─────────────────────
+   • Presiona la tecla Windows
+   • Escribe: "Docker Desktop"
+   • Haz clic en "Docker Desktop"
+   • Espera a que abra
+
+2️⃣  ESPERAR A QUE INICIE (1-2 minutos)
+   ──────────────────────────────────
+   En la ventana de Docker Desktop verás:
+
+   ❌ "Starting..." (aún no está listo)
+   ✅ "Engine running" (¡listo!)
+
+   También puedes ver el ícono en la barra de tareas:
+   • Busca el ícono de la ballena de Docker
+   • Debe estar en color (no gris)
+   • Al pasar el mouse debe decir "Docker Desktop is running"
+
+3️⃣  CERRAR Y REABRIR TERMINAL
+   ─────────────────────────
+   • Cierra ESTA ventana de PowerShell/CMD
+   • Abre una NUEVA terminal
+   • Ve a la carpeta del proyecto:
+     cd C:\Users\manue\PhpstormProjects\ElGalpon
+
+4️⃣  EJECUTAR EL SCRIPT DE INICIO
+   ──────────────────────────────
+   Ejecuta uno de estos comandos:
+
+   Opción A (doble click):
+   • INICIAR_DOCKER.bat
+
+   Opción B (en terminal):
+   • .\INICIAR_DOCKER.bat
+
+
+═══════════════════════════════════════════════════════════════
+
+🔍 VERIFICAR QUE DOCKER FUNCIONA:
+
+En la nueva terminal, ejecuta:
+
+   docker --version
+
+Debe mostrar algo como:
+   Docker version 24.0.7, build afdd53b
+
+Si dice "docker no se reconoce como comando":
+   • Reinicia Windows
+   • Vuelve a abrir Docker Desktop
+   • Intenta de nuevo
+
+═══════════════════════════════════════════════════════════════
+
+⚡ UNA VEZ QUE FUNCIONE:
+
+Ejecuta:
+   cd C:\Users\manue\PhpstormProjects\ElGalpon
+   INICIAR_DOCKER.bat
+
+Verás:
+   Creating elgalpon_mysql    ... done
+   Creating elgalpon_backend  ... done
+   Creating elgalpon_frontend ... done
+
+Luego abre en tu navegador:
+   http://localhost:8080
+
+═══════════════════════════════════════════════════════════════
+
+❓ SI SIGUE SIN FUNCIONAR:
+
+1. Reinicia Windows
+2. Abre Docker Desktop después de reiniciar
+3. Abre una terminal NUEVA
+4. Ejecuta: .\probar_docker.bat
+5. El script te dirá exactamente qué está mal
+
+═══════════════════════════════════════════════════════════════
+
+🎯 RESUMEN RÁPIDO:
+
+   AHORA ────► Abre Docker Desktop
+            ├─ Espera "Engine running"
+            └─ Reinicia terminal
+
+   LUEGO ───► INICIAR_DOCKER.bat
+            └─ Accede a http://localhost:8080
+
+═══════════════════════════════════════════════════════════════
+

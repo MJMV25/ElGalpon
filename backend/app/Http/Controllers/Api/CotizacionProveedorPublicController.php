@@ -54,7 +54,9 @@ class CotizacionProveedorPublicController extends Controller
                     'fecha_limite' => $cotizacionProveedor->cotizacion->fecha_limite->format('Y-m-d'),
                 ],
                 'proveedor' => [
-                    'nombre' => $cotizacionProveedor->proveedor->nombre,
+                    'nombre_empresa' => $cotizacionProveedor->proveedor->nombre_empresa,
+                    'nit' => $cotizacionProveedor->proveedor->nit,
+                    'nombre_asesor' => $cotizacionProveedor->proveedor->nombre_asesor,
                 ],
                 'productos' => $cotizacionProveedor->cotizacion->productos->map(function ($p) {
                     return [
@@ -91,7 +93,7 @@ class CotizacionProveedorPublicController extends Controller
         // Información de la cotización
         $sheet->setCellValue('A1', 'COTIZACIÓN EL GALPÓN');
         $sheet->setCellValue('A2', 'Número: ' . $cotizacionProveedor->cotizacion->numero);
-        $sheet->setCellValue('A3', 'Proveedor: ' . $cotizacionProveedor->proveedor->nombre);
+        $sheet->setCellValue('A3', 'Proveedor: ' . $cotizacionProveedor->proveedor->nombre_empresa);
         $sheet->setCellValue('A4', 'Fecha límite: ' . $cotizacionProveedor->cotizacion->fecha_limite->format('d/m/Y'));
 
         // Estilos para el encabezado
@@ -321,11 +323,13 @@ class CotizacionProveedorPublicController extends Controller
     {
         $validated = $request->validate([
             'respuestas' => 'required|array|min:1',
-            'respuestas.*.cotizacion_producto_id' => 'required|exists:cotizacion_productos,id',
+            'respuestas.*.cotizacion_producto_id' => 'nullable|exists:cotizacion_productos,id',
             'respuestas.*.precio_unitario' => 'required|numeric|min:0',
             'respuestas.*.cantidad_disponible' => 'nullable|integer|min:0',
             'respuestas.*.tiempo_entrega_dias' => 'nullable|integer|min:0',
             'respuestas.*.notas' => 'nullable|string',
+            'respuestas.*.es_producto_extra' => 'nullable|boolean',
+            'respuestas.*.nombre_producto_extra' => 'nullable|string|max:255',
             'notas_generales' => 'nullable|string',
         ]);
 
@@ -344,13 +348,17 @@ class CotizacionProveedorPublicController extends Controller
 
             // Crear nuevas respuestas
             foreach ($validated['respuestas'] as $respuesta) {
+                $esProductoExtra = $respuesta['es_producto_extra'] ?? false;
+
                 CotizacionRespuesta::create([
                     'cotizacion_proveedor_id' => $cotizacionProveedor->id,
-                    'cotizacion_producto_id' => $respuesta['cotizacion_producto_id'],
+                    'cotizacion_producto_id' => $esProductoExtra ? null : $respuesta['cotizacion_producto_id'],
                     'precio_unitario' => $respuesta['precio_unitario'],
                     'cantidad_disponible' => $respuesta['cantidad_disponible'] ?? null,
                     'tiempo_entrega_dias' => $respuesta['tiempo_entrega_dias'] ?? null,
                     'notas' => $respuesta['notas'] ?? null,
+                    'es_producto_extra' => $esProductoExtra,
+                    'nombre_producto_extra' => $esProductoExtra ? $respuesta['nombre_producto_extra'] : null,
                 ]);
             }
 
@@ -373,17 +381,22 @@ class CotizacionProveedorPublicController extends Controller
         $proveedor = $cotizacionProveedor->proveedor;
         $cotizacion = $cotizacionProveedor->cotizacion;
 
+        // Contar productos extra
+        $productosExtra = collect($validated['respuestas'])->where('es_producto_extra', true)->count();
+        $mensajeExtra = $productosExtra > 0 ? " (incluye {$productosExtra} producto(s) extra)" : "";
+
         foreach ($admins as $admin) {
             Notificacion::create([
                 'user_id' => $admin->id,
                 'tipo' => 'cotizacion_respuesta',
                 'titulo' => '✅ Nueva respuesta de cotización',
-                'mensaje' => "El proveedor {$proveedor->nombre} respondió la cotización {$cotizacion->numero} mediante formulario web",
+                'mensaje' => "El proveedor {$proveedor->nombre} respondió la cotización {$cotizacion->numero} mediante formulario web{$mensajeExtra}",
                 'enlace' => "/cotizaciones/{$cotizacion->id}",
                 'datos' => [
                     'cotizacion_id' => $cotizacion->id,
                     'proveedor_id' => $proveedor->id,
                     'metodo' => 'web',
+                    'productos_extra' => $productosExtra,
                 ],
             ]);
         }

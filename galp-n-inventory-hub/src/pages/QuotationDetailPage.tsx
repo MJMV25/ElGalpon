@@ -219,10 +219,12 @@ const QuotationDetailPage = () => {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">{prov.proveedor_nombre}</h3>
-                    {prov.proveedor_calificacion && typeof prov.proveedor_calificacion === 'number' && (
+                    {prov.proveedor_calificacion && (
                       <div className="flex items-center gap-1 text-xs text-warning">
                         <Star className="w-3.5 h-3.5 fill-current" />
-                        {prov.proveedor_calificacion.toFixed(1)}/5.0
+                        {typeof prov.proveedor_calificacion === 'number'
+                          ? prov.proveedor_calificacion.toFixed(1)
+                          : Number(prov.proveedor_calificacion).toFixed(1)}/5.0
                       </div>
                     )}
                   </div>
@@ -258,8 +260,17 @@ const QuotationDetailPage = () => {
                           </thead>
                           <tbody>
                             {prov.productos_detalle.map((d, idx) => (
-                              <tr key={idx} className="border-b border-border last:border-0">
-                                <td className="py-1.5 text-foreground">{d.nombre_producto}</td>
+                              <tr key={idx} className={`border-b border-border last:border-0 ${d.es_producto_extra ? 'bg-warning/10' : ''}`}>
+                                <td className="py-1.5 text-foreground">
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{d.nombre_producto}</span>
+                                    {d.es_producto_extra && (
+                                      <span className="px-1.5 py-0.5 rounded-full bg-warning text-warning-foreground text-[10px] font-bold whitespace-nowrap">
+                                        EXTRA
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
                                 <td className="py-1.5 text-right text-muted-foreground">{d.cantidad}</td>
                                 <td className="py-1.5 text-right">{formatCurrencyFull(d.precio_unitario)}</td>
                                 <td className="py-1.5 text-right font-medium">{formatCurrencyFull(d.subtotal)}</td>

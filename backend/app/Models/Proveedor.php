@@ -13,14 +13,18 @@ class Proveedor extends Model
     protected $table = 'proveedores';
 
     protected $fillable = [
-        'nombre',
-        'email',
-        'telefono',
-        'direccion',
+        'nombre_empresa',
+        'nit',
+        'linea_producto',
         'ciudad',
-        'contacto_nombre',
+        'direccion',
+        'email_administrativo',
+        'telefono_administrativo',
+        'nombre_asesor',
+        'cargo_asesor',
+        'telefono_contacto',
+        'email_comercial',
         'notas',
-        'deuda',
         'calificacion',
         'activo',
     ];
@@ -28,7 +32,6 @@ class Proveedor extends Model
     protected function casts(): array
     {
         return [
-            'deuda' => 'decimal:2',
             'calificacion' => 'decimal:2',
             'activo' => 'boolean',
         ];
@@ -40,14 +43,6 @@ class Proveedor extends Model
     public function productos(): HasMany
     {
         return $this->hasMany(Producto::class);
-    }
-
-    /**
-     * Relación con pagos
-     */
-    public function pagos(): HasMany
-    {
-        return $this->hasMany(PagoProveedor::class);
     }
 
     /**
@@ -67,35 +62,11 @@ class Proveedor extends Model
     }
 
     /**
-     * Incrementar deuda
-     */
-    public function incrementarDeuda(float $monto): void
-    {
-        $this->increment('deuda', $monto);
-    }
-
-    /**
-     * Decrementar deuda (pago)
-     */
-    public function decrementarDeuda(float $monto): void
-    {
-        $this->decrement('deuda', $monto);
-    }
-
-    /**
      * Scope para proveedores activos
      */
     public function scopeActivos($query)
     {
         return $query->where('activo', true);
-    }
-
-    /**
-     * Scope para proveedores con deuda
-     */
-    public function scopeConDeuda($query)
-    {
-        return $query->where('deuda', '>', 0);
     }
 }
 

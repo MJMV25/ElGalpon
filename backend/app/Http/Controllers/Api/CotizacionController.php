@@ -148,19 +148,23 @@ class CotizacionController extends Controller
             if ($cp->respuestas->count() > 0) {
                 foreach ($cp->respuestas as $respuesta) {
                     $producto = $respuesta->cotizacionProducto;
-                    $subtotal = $respuesta->precio_unitario * $producto->cantidad;
+                    $cantidad = $respuesta->es_producto_extra ? ($respuesta->cantidad_disponible ?? 1) : $producto->cantidad;
+                    $subtotal = $respuesta->precio_unitario * $cantidad;
                     $totalCotizado += $subtotal;
 
                     $productosDetalle[] = [
-                        'cotizacion_producto_id' => $producto->id,
-                        'nombre_producto' => $producto->nombre_producto,
-                        'cantidad' => $producto->cantidad,
-                        'unidad' => $producto->unidad,
+                        'cotizacion_producto_id' => $producto?->id,
+                        'nombre_producto' => $respuesta->es_producto_extra
+                            ? $respuesta->nombre_producto_extra
+                            : $producto->nombre_producto,
+                        'cantidad' => $cantidad,
+                        'unidad' => $producto?->unidad ?? 'unidad',
                         'precio_unitario' => (float) $respuesta->precio_unitario,
                         'subtotal' => (float) $subtotal,
                         'disponibilidad' => $respuesta->cantidad_disponible,
                         'tiempo_entrega' => $respuesta->tiempo_entrega_dias,
                         'observaciones' => $respuesta->notas,
+                        'es_producto_extra' => (bool) $respuesta->es_producto_extra,
                     ];
                 }
             }
@@ -174,9 +178,9 @@ class CotizacionController extends Controller
             return [
                 'id' => $cp->id,
                 'proveedor_id' => $proveedor->id,
-                'proveedor_nombre' => $proveedor->nombre,
-                'proveedor_email' => $proveedor->email,
-                'proveedor_telefono' => $proveedor->telefono,
+                'proveedor_nombre' => $proveedor->nombre_empresa,
+                'proveedor_email' => $proveedor->email_comercial,
+                'proveedor_telefono' => $proveedor->telefono_contacto,
                 'proveedor_calificacion' => $proveedor->calificacion,
                 'estado' => $estadoReal, // 'pendiente', 'enviada', 'respondida', 'sin_respuesta'
                 'fecha_envio' => $cp->fecha_envio?->format('Y-m-d H:i:s'),
@@ -431,7 +435,7 @@ class CotizacionController extends Controller
 
                 $respuestasProducto[] = [
                     'proveedor_id' => $proveedor->id,
-                    'proveedor_nombre' => $proveedor->nombre,
+                    'proveedor_nombre' => $proveedor->nombre_empresa,
                     'precio_unitario' => $respuesta->precio_unitario,
                     'cantidad_disponible' => $respuesta->cantidad_disponible,
                     'tiempo_entrega_dias' => $respuesta->tiempo_entrega_dias,
@@ -466,7 +470,7 @@ class CotizacionController extends Controller
 
             $resumenProveedores[] = [
                 'proveedor_id' => $cp->proveedor->id,
-                'proveedor_nombre' => $cp->proveedor->nombre,
+                'proveedor_nombre' => $cp->proveedor->nombre_empresa,
                 'estado' => $cp->estado,
                 'total_cotizado' => $total,
                 'calificacion' => $cp->proveedor->calificacion,

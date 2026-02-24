@@ -1,214 +1,247 @@
-# 🏪 El Galpón - Sistema de Gestión de Inventario
+﻿﻿# 🏪 El Galpón - Sistema de Gestión de Inventario
 
-Sistema completo de gestión de inventario para agropecuaria y veterinaria ubicada en Alcalá, Valle del Cauca, Colombia.
-
----
-
-## 🚀 TECNOLOGÍAS
-
-### **Backend:**
-- Laravel 11+ (PHP 8.2+)
-- **MySQL 8.0+** ⚠️ (NO SQLite)
-- Laravel Sanctum (Autenticación)
-- Laravel Mail (Envío de emails)
-
-### **Frontend:**
-- React 18+
-- TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui
-- Zustand (Estado global)
-- React Router DOM
+Sistema de gestión de inventario para agropecuaria y veterinaria - Alcalá, Valle del Cauca, Colombia.
 
 ---
 
-## 📋 REQUISITOS PREVIOS
+## 🚀 INICIO RÁPIDO
 
-Antes de clonar el proyecto, asegúrate de tener instalado:
-
-- ✅ **Git** → https://git-scm.com/download/win
-- ✅ **PHP 8.2+** → https://windows.php.net/download/
-- ✅ **Composer** → https://getcomposer.org/download/
-- ✅ **MySQL 8.0+** → https://dev.mysql.com/downloads/installer/ ⚠️ **IMPORTANTE**
-- ✅ **Node.js 18+** → https://nodejs.org/
-- ✅ **Editor de código** → VS Code o PHPStorm
-
----
-
-## 🔧 INSTALACIÓN RÁPIDA
-
-### **1. Clonar el repositorio:**
+### Opción 1: Docker (Recomendado para Compañeros)
 
 ```bash
-git clone https://github.com/MJMV25/ElGalpon.git
+# 1. Clonar el repositorio
+git clone <URL_DEL_REPOSITORIO>
 cd ElGalpon
-git checkout develop
+
+# 2. Configurar variables de entorno
+copy .env.docker.example .env
+notepad .env  # Agregar credenciales de email
+
+# 3. Iniciar con Docker
+docker-compose up -d
 ```
 
-### **2. Configurar MySQL:**
+**📖 Guía completa**: Lee [INSTALACION_COMPAÑEROS.md](INSTALACION_COMPAÑEROS.md) para instrucciones detalladas.
 
-Abre MySQL y crea la base de datos:
+### Opción 2: Desarrollo Local (Windows + XAMPP)
 
-```sql
-CREATE DATABASE elgalpon CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+#### Iniciar el Proyecto:
+```batch
+INICIAR_SERVIDORES.bat
 ```
 
-### **3. Configurar Backend (Laravel):**
-
-```bash
-cd backend
-composer install
-copy .env.example .env
-php artisan key:generate
+#### Detener los Servidores:
+```batch
+DETENER_SERVIDORES.bat
 ```
 
-Edita `backend/.env` con tu configuración:
+### Acceso a la Aplicación:
 
-```env
-# Base de datos MySQL
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=elgalpon
-DB_USERNAME=root
-DB_PASSWORD=tu-password-mysql
+**Con Docker:**
+- Frontend: http://localhost:8080
+- Backend API: http://localhost:8000
+- Base de datos MySQL: localhost:3306
 
-# Configuración de correo (Gmail)
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=tu-email@gmail.com
-MAIL_PASSWORD="tu-app-password"
-MAIL_ENCRYPTION=tls
-```
-
-### **4. Migrar base de datos:**
-
-```bash
-php artisan migrate
-php artisan db:seed
-```
-
-### **5. Configurar Frontend (React):**
-
-```bash
-cd ../galp-n-inventory-hub
-npm install
-```
-
-### **6. Iniciar servidores:**
-
-**Terminal 1 - Backend:**
-```bash
-cd backend
-php artisan serve
-```
-
-**Terminal 2 - Frontend:**
-```bash
-cd galp-n-inventory-hub
-npm run dev
-```
-
-### **7. Acceder:**
-
-Abre http://localhost:8080 e inicia sesión con cualquiera de estos emails:
-
-- `manuela.gomez@elgalpon-alcala.com` (Admin)
-- `carlos.gomez@elgalpon-alcala.com` (Admin)
-- `mjmunoz_108@cue.edu.co` (Admin)
-- `sgomez_21@cue.edu.co` (Admin)
-- `sebastian.rodriguez@elgalpon-alcala.com` (Empleado)
-
-**Recibirás un código de 6 dígitos en tu correo para iniciar sesión.**
+**Desarrollo Local:**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- phpMyAdmin: http://localhost/phpmyadmin
 
 ---
 
-## 📚 DOCUMENTACIÓN
+## 🛠️ TECNOLOGÍAS
 
-| Archivo | Descripción |
-|---------|-------------|
-| **`INICIO_RAPIDO.md`** | Guía completa paso a paso |
-| **`GIT_WORKFLOW.md`** | Cómo trabajar con Git |
-| **`ASIGNACION_TAREAS.md`** | División de trabajo |
-| **`RESUMEN_GIT.md`** | Estado actual del proyecto |
+- **Backend**: Laravel 11 + PHP 8.2+
+- **Frontend**: React 18 + TypeScript + Vite
+- **Base de Datos**: MySQL 8.0
+- **Autenticación**: Email con código OTP (6 dígitos)
+- **Email**: Gmail SMTP
+- **Contenedores**: Docker + Docker Compose
 
 ---
 
-## 📂 ESTRUCTURA
+## 👥 USUARIOS POR DEFECTO
+
+### Administradores (Acceso Completo):
+- manuela.gomez@elgalpon-alcala.com
+- carlos.gomez@elgalpon-alcala.com
+- mjmunoz_108@cue.edu.co
+- sgomez_21@cue.edu.co
+
+### Empleado (Solo Lectura):
+- sebastian.rodriguez@elgalpon-alcala.com
+
+**Nota**: El código de verificación se envía al email configurado en las variables de entorno.
+
+---
+
+## 📊 FUNCIONALIDADES
+
+### 🔑 Administradores:
+- ✅ Gestión completa de productos (CRUD)
+- ✅ Gestión de proveedores y deudas
+- ✅ Gestión de usuarios
+- ✅ Sistema de cotizaciones con comparación
+- ✅ Control de inventario y stock crítico
+- ✅ Reportes financieros
+- ✅ Notificaciones automáticas por email
+
+### 👤 Empleados:
+- ✅ Ver inventario completo
+- ✅ Ver reportes y presupuestos
+- ✅ Ver proveedores
+- ❌ Sin permisos de edición/eliminación
+
+---
+
+## 📁 ESTRUCTURA DEL PROYECTO
 
 ```
 ElGalpon/
-├── backend/              # API Laravel + MySQL
-├── galp-n-inventory-hub/ # Frontend React + TypeScript
-├── GIT_WORKFLOW.md       # Guía Git
-├── INICIO_RAPIDO.md      # Setup completo
-└── README.md             # Este archivo
+├── backend/                    # API Laravel
+│   ├── app/
+│   │   ├── Http/Controllers/
+│   │   ├── Models/
+│   │   └── Mail/
+│   ├── database/
+│   │   ├── migrations/
+│   │   ├── seeders/
+│   │   └── backup/             # Backups de BD
+│   ├── routes/
+│   └── Dockerfile
+│
+├── galp-n-inventory-hub/       # Frontend React
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── store/
+│   ├── Dockerfile
+│   └── nginx.conf
+│
+├── docker-compose.yml          # Configuración Docker
+├── .env.docker.example         # Ejemplo de variables
+├── DOCKER_GUIDE.md             # Guía de Docker
+└── INSTALACION_COMPAÑEROS.md   # Guía de instalación
 ```
 
 ---
 
-## 🌿 RAMAS
+## 🐳 DOCKER
 
-```
-main (producción)
-└── develop (desarrollo) ⭐
-    └── feature/* (funcionalidades)
-```
+### Comandos Básicos:
 
----
-
-## 📦 MÓDULOS
-
-### **✅ Implementados:**
-- Autenticación por email
-- Gestión de usuarios
-- Dashboard
-- Productos y categorías
-- Proveedores
-- Cotizaciones
-
-### **🚧 En desarrollo:**
-- Inventario (movimientos)
-- Reportes avanzados
-- Notificaciones
-- Pagos a proveedores
-
----
-
-## 🔗 ENLACES
-
-- **Repositorio:** https://github.com/MJMV25/ElGalpon
-- **Backend:** http://localhost:8000/api
-- **Frontend:** http://localhost:8080
-
----
-
-## 🆘 PROBLEMAS COMUNES
-
-### **No llega el código al correo:**
-- Usa App Password de Gmail: https://myaccount.google.com/apppasswords
-
-### **Error de base de datos:**
-- Verifica que MySQL esté corriendo
-- Verifica credenciales en `.env`
-
-### **Puerto en uso:**
 ```bash
-Stop-Process -Name php -Force
+# Iniciar servicios
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
+
+# Detener servicios
+docker-compose down
+
+# Reiniciar servicios
+docker-compose restart
+
+# Ver estado
+docker-compose ps
+```
+
+### Crear Backup de la Base de Datos:
+
+```bash
+.\crear_backup.ps1
 ```
 
 ---
 
-## 👥 EQUIPO
+## 🔧 DESARROLLO
 
-- Manuel Villalobos - Full Stack Developer
-- [Compañero] - Full Stack Developer
+### Requisitos para Desarrollo Local:
+- PHP 8.2+
+- Composer
+- Node.js 20+
+- MySQL 8.0+
+- XAMPP (Windows)
+
+### Instalación Backend:
+```bash
+cd backend
+composer install
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
+
+### Instalación Frontend:
+```bash
+cd galp-n-inventory-hub
+npm install
+npm run dev
+```
 
 ---
 
-**Última actualización:** 2026-02-21  
-**Base de datos:** MySQL 8.0+  
-**Repositorio:** https://github.com/MJMV25/ElGalpon
+## 📧 CONFIGURACIÓN DE EMAIL
 
+Para que el sistema envíe códigos de verificación, necesitas configurar Gmail:
+
+1. Ve a [Google Account Security](https://myaccount.google.com/security)
+2. Activa "Verificación en 2 pasos"
+3. Genera una "Contraseña de aplicación"
+4. Úsala en las variables de entorno:
+
+```env
+MAIL_USERNAME=tu_email@gmail.com
+MAIL_PASSWORD=xxxx xxxx xxxx xxxx
+MAIL_FROM_ADDRESS=tu_email@gmail.com
+```
+
+---
+
+## 🔐 SEGURIDAD
+
+- ✅ Autenticación por email con código OTP
+- ✅ Tokens JWT/Sanctum con expiración
+- ✅ Rate limiting (5 intentos por minuto)
+- ✅ Middleware de roles y permisos
+- ✅ Validación de datos en backend
+- ✅ CORS configurado
+- ✅ Contraseñas encriptadas (no se usan contraseñas tradicionales)
+
+---
+
+## 📝 NOTAS IMPORTANTES
+
+- **Base de Datos**: Migrada de SQLite a MySQL para mejor rendimiento
+- **Persistencia**: Los datos en Docker se guardan en volúmenes persistentes
+- **Git**: NO subir archivos `.env`, `node_modules`, `vendor`, ni backups
+- **Backups**: Solo `backup.sql` se sube a Git para Docker
+
+---
+
+## 🆘 SOPORTE
+
+Si tienes problemas:
+
+1. **Docker**: Lee [DOCKER_GUIDE.md](DOCKER_GUIDE.md)
+2. **Instalación**: Lee [INSTALACION_COMPAÑEROS.md](INSTALACION_COMPAÑEROS.md)
+3. **Logs**: Revisa `docker-compose logs -f`
+4. **Contacta al equipo**
+
+---
+
+## 🎯 PRÓXIMAS FUNCIONALIDADES
+
+- [ ] Sistema de notificaciones push
+- [ ] Dashboard con gráficos en tiempo real
+- [ ] Exportar reportes a PDF
+- [ ] App móvil (React Native)
+- [ ] Sistema de roles más granular
+
+---
+
+**Desarrollado para El Galpón - Alcalá, Valle del Cauca** 🇨🇴  
+**Versión**: 1.0.0  
+**Última actualización**: Febrero 2026

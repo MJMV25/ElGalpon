@@ -27,10 +27,14 @@ interface Producto {
 
 interface Proveedor {
   id: number;
-  nombre: string;
-  email: string;
-  telefono: string;
-  deuda: number;
+  nombre_empresa: string;
+  nit: string;
+  email_administrativo: string;
+  email_comercial: string;
+  telefono_administrativo: string;
+  telefono_contacto: string;
+  nombre_asesor: string;
+  ciudad: string;
   calificacion: number | null;
 }
 
@@ -194,7 +198,9 @@ const NewQuotationPage = () => {
   };
 
   const filteredProvs = proveedoresDisponibles.filter(p =>
-    p.nombre.toLowerCase().includes(searchProv.toLowerCase())
+    p.nombre_empresa.toLowerCase().includes(searchProv.toLowerCase()) ||
+    p.nombre_asesor.toLowerCase().includes(searchProv.toLowerCase()) ||
+    p.nit.toLowerCase().includes(searchProv.toLowerCase())
   );
 
   // Debug
@@ -375,8 +381,11 @@ const NewQuotationPage = () => {
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">{p.nombre.charAt(0)}</div>
-                              <span className="font-medium text-foreground text-sm">{p.nombre}</span>
+                              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">{p.nombre_empresa.charAt(0)}</div>
+                              <div className="flex-1 min-w-0">
+                                <span className="font-medium text-foreground text-sm block truncate">{p.nombre_empresa}</span>
+                                <span className="text-xs text-muted-foreground block truncate">NIT: {p.nit}</span>
+                              </div>
                             </div>
                             {selected && <span className="text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-medium">✓</span>}
                           </div>
@@ -384,14 +393,9 @@ const NewQuotationPage = () => {
                             <Star className="w-3.5 h-3.5 fill-current" /> {p.calificacion && typeof p.calificacion === 'number' ? p.calificacion.toFixed(1) : 'N/A'}/5.0
                           </div>
                           <div className="text-xs text-muted-foreground space-y-1">
-                            <div className="flex items-center gap-1"><Package className="w-3 h-3" /> {p.email}</div>
-                            <div className="flex items-center gap-1"><Truck className="w-3 h-3" /> {p.telefono}</div>
+                            <div className="flex items-center gap-1 truncate"><Package className="w-3 h-3 shrink-0" /> {p.nombre_asesor}</div>
+                            <div className="flex items-center gap-1 truncate"><Truck className="w-3 h-3 shrink-0" /> {p.ciudad}</div>
                           </div>
-                          {p.deuda > 0 && (
-                            <div className="mt-2 text-xs text-destructive font-medium">
-                              Deuda: ${p.deuda.toLocaleString('es-CO')}
-                            </div>
-                          )}
                         </div>
                       );
                     })}
@@ -429,8 +433,8 @@ const NewQuotationPage = () => {
                       const prov = proveedoresDisponibles.find(p => p.id === id);
                       return prov ? (
                         <div key={id} className="text-sm">
-                          🏪 <span className="font-medium">{prov.nombre}</span>
-                          <span className="text-muted-foreground ml-2">({prov.email})</span>
+                          🏪 <span className="font-medium">{prov.nombre_empresa}</span>
+                          <span className="text-muted-foreground ml-2">({prov.email_comercial})</span>
                         </div>
                       ) : null;
                     })}

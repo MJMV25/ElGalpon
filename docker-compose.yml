@@ -32,7 +32,7 @@ services:
     container_name: elgalpon_backend
     restart: unless-stopped
     environment:
-      APP_NAME: "El Galpón"
+      APP_NAME: "El GalpÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n"
       APP_ENV: production
       APP_DEBUG: "false"
       APP_URL: http://localhost:8000
@@ -42,14 +42,15 @@ services:
       DB_DATABASE: elgalpon
       DB_USERNAME: elgalpon_user
       DB_PASSWORD: elgalpon_pass
+      QUEUE_CONNECTION: sync
       MAIL_MAILER: smtp
       MAIL_HOST: smtp.gmail.com
       MAIL_PORT: 587
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_USERNAME: samugj22@gmail.com
+      MAIL_PASSWORD: mzsyyvzuqhpyxost
       MAIL_ENCRYPTION: tls
-      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
-      MAIL_FROM_NAME: "El Galpón"
+      MAIL_FROM_ADDRESS: samugj22@gmail.com
+      MAIL_FROM_NAME: "El GalpÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n"
     ports:
       - "8000:8000"
     volumes:

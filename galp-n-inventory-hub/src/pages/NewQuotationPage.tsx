@@ -1,41 +1,23 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight, Package, Plus, Send, Star, Trash2, Truck, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '@/lib/api';
+import productosService, { Producto } from '@/services/productosService';
+import proveedoresService, { Proveedor } from '@/services/proveedoresService';
+import cotizacionesService from '@/services/cotizacionesService';
 
 const UNIDADES = ['Unidades', 'Bultos', 'Kilos', 'Litros', 'Frascos'] as const;
+
+type Unidad = (typeof UNIDADES)[number];
 
 interface ProductoCotizacion {
   id: number;
   nombre: string;
   categoria: string;
   cantidad: number;
-  unidad: string;
+  unidad: Unidad;
   especificaciones?: string;
-  producto_id?: number;
-}
-
-interface Producto {
-  id: number;
-  codigo: string;
-  nombre: string;
-  categoria: {
-    nombre: string;
-  };
-}
-
-interface Proveedor {
-  id: number;
-  nombre_empresa: string;
-  nit: string;
-  email_administrativo: string;
-  email_comercial: string;
-  telefono_administrativo: string;
-  telefono_contacto: string;
-  nombre_asesor: string;
-  ciudad: string;
-  calificacion: number | null;
+  producto_id?: number | null;
 }
 
 const steps = [
@@ -47,62 +29,54 @@ const steps = [
 
 const NewQuotationPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
-  // Datos desde el backend
   const [productosDisponibles, setProductosDisponibles] = useState<Producto[]>([]);
   const [proveedoresDisponibles, setProveedoresDisponibles] = useState<Proveedor[]>([]);
 
-  // Step 1
   const today = new Date().toISOString().split('T')[0];
   const defaultLimit = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
   const [titulo, setTitulo] = useState('');
   const [fechaLimite, setFechaLimite] = useState(defaultLimit);
   const [descripcion, setDescripcion] = useState('');
 
-  // Step 2
-  const [productos, setProductos] = useState<ProductoCotizacion[]>([]);
+  const preselected = (location.state as { preselectedProducts?: Array<{ producto_id: number; nombre: string; categoria: string }> } | null)?.preselectedProducts || [];
 
-  // Step 3
+  const [productos, setProductos] = useState<ProductoCotizacion[]>(() => {
+    if (preselected.length === 0) return [];
+    return preselected.map((p, index) => ({
+      id: Date.now() + index,
+      nombre: p.nombre,
+      categoria: p.categoria,
+      cantidad: 1,
+      unidad: 'Unidades',
+      producto_id: p.producto_id,
+      especificaciones: ''
+    }));
+  });
+
   const [selectedProveedores, setSelectedProveedores] = useState<number[]>([]);
   const [searchProv, setSearchProv] = useState('');
 
-  // Cargar datos iniciales
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoadingData(true);
         const [productosRes, proveedoresRes] = await Promise.all([
-          api.get('/productos'),
-          api.get('/proveedores')
+          productosService.getAll({ page: 1, per_page: 500 }),
+          proveedoresService.getAll({ per_page: 'all' })
         ]);
 
-        // Extraer productos
-        let productos: Producto[] = [];
-        if (productosRes.data?.success) {
-          if (Array.isArray(productosRes.data.data?.data)) {
-            productos = productosRes.data.data.data;
-          } else if (Array.isArray(productosRes.data.data)) {
-            productos = productosRes.data.data;
-          }
+        if (productosRes.success) {
+          setProductosDisponibles(productosRes.data.data || []);
         }
-        setProductosDisponibles(productos);
-
-        // Extraer proveedores
-        let proveedores: Proveedor[] = [];
-        if (proveedoresRes.data?.success) {
-          if (Array.isArray(proveedoresRes.data.data?.data)) {
-            proveedores = proveedoresRes.data.data.data;
-          } else if (Array.isArray(proveedoresRes.data.data)) {
-            proveedores = proveedoresRes.data.data;
-          }
+        if (proveedoresRes.success) {
+          setProveedoresDisponibles(proveedoresRes.data || []);
         }
-        setProveedoresDisponibles(proveedores);
-
       } catch (error: any) {
-        console.error('Error cargando datos:', error);
         toast.error('Error al cargar productos y proveedores');
       } finally {
         setIsLoadingData(false);
@@ -111,6 +85,20 @@ const NewQuotationPage = () => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (preselected.length === 0 || productosDisponibles.length === 0) return;
+    setProductos(prev => prev.map(p => {
+      if (!p.producto_id) return p;
+      const found = productosDisponibles.find(mp => mp.id === p.producto_id);
+      if (!found) return p;
+      return {
+        ...p,
+        nombre: found.nombre,
+        categoria: found.categoria?.nombre || p.categoria,
+      };
+    }));
+  }, [preselected.length, productosDisponibles]);
+
   const addProducto = () => {
     setProductos(prev => [...prev, {
       id: Date.now(),
@@ -118,7 +106,7 @@ const NewQuotationPage = () => {
       categoria: '',
       cantidad: 1,
       unidad: 'Unidades',
-      producto_id: undefined,
+      producto_id: null,
       especificaciones: ''
     }]);
   };
@@ -126,13 +114,13 @@ const NewQuotationPage = () => {
   const updateProducto = (idx: number, field: keyof ProductoCotizacion, value: any) => {
     setProductos(prev => prev.map((p, i) => {
       if (i !== idx) return p;
-      if (field === 'nombre') {
-        const found = productosDisponibles.find(mp => mp.nombre === value);
+      if (field === 'producto_id') {
+        const found = productosDisponibles.find(mp => mp.id === Number(value));
         return {
           ...p,
-          nombre: value,
+          producto_id: value ? Number(value) : null,
+          nombre: found?.nombre || p.nombre,
           categoria: found?.categoria?.nombre || p.categoria,
-          producto_id: found?.id
         };
       }
       return { ...p, [field]: value };
@@ -156,10 +144,9 @@ const NewQuotationPage = () => {
     try {
       setIsSending(true);
 
-      // Crear cotización
       const cotizacionData = {
         titulo,
-        descripcion,
+        descripcion: descripcion || undefined,
         fecha: today,
         fecha_limite: fechaLimite,
         productos: productos.map(p => ({
@@ -171,26 +158,23 @@ const NewQuotationPage = () => {
         proveedores: selectedProveedores
       };
 
-      console.log('📤 Enviando cotización:', cotizacionData);
+      const response = await cotizacionesService.create(cotizacionData);
 
-      const response = await api.post('/cotizaciones', cotizacionData);
+      if (response.success) {
+        const cotizacionId = response.data.id;
+        const envioResponse = await cotizacionesService.enviar(cotizacionId);
 
-      if (response.data.success) {
-        const cotizacionId = response.data.data.id;
-
-        // Enviar la cotización a los proveedores
-        const envioResponse = await api.post(`/cotizaciones/${cotizacionId}/enviar`);
-
-        if (envioResponse.data.success) {
+        if (envioResponse.success) {
           toast.success(`✅ Cotización enviada exitosamente a ${selectedProveedores.length} proveedores`);
-          setTimeout(() => navigate('/cotizaciones'), 1500);
         } else {
           toast.warning('Cotización creada pero hubo problemas al enviar emails');
-          setTimeout(() => navigate('/cotizaciones'), 1500);
         }
+
+        setTimeout(() => navigate('/cotizaciones'), 1200);
+      } else {
+        toast.error(response.message || 'Error al crear la cotización');
       }
     } catch (error: any) {
-      console.error('❌ Error enviando cotización:', error);
       toast.error(error.response?.data?.message || 'Error al enviar la cotización');
     } finally {
       setIsSending(false);
@@ -202,18 +186,6 @@ const NewQuotationPage = () => {
     p.nombre_asesor.toLowerCase().includes(searchProv.toLowerCase()) ||
     p.nit.toLowerCase().includes(searchProv.toLowerCase())
   );
-
-  // Debug
-  useEffect(() => {
-    if (currentStep === 2) {
-      console.log('🔍 Paso 2 - Proveedores:', {
-        total: proveedoresDisponibles.length,
-        filtrados: filteredProvs.length,
-        proveedores: proveedoresDisponibles,
-        busqueda: searchProv
-      });
-    }
-  }, [currentStep, proveedoresDisponibles, filteredProvs, searchProv]);
 
   return (
     <div className="space-y-6">
@@ -233,12 +205,11 @@ const NewQuotationPage = () => {
         </div>
       ) : (
         <>
-          {/* Wizard Steps */}
           <div className="flex items-center justify-between">
             {steps.map((step, i) => (
               <div key={i} className="flex items-center flex-1">
                 <div className="flex flex-col items-center flex-1">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold z-10 ${i < currentStep ? 'bg-primary text-primary-foreground' : i === currentStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold z-10 ${i <= currentStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                     {i < currentStep ? <Check className="w-5 h-5" /> : i + 1}
                   </div>
                   <span className={`text-xs mt-1 text-center ${i <= currentStep ? 'text-primary font-medium' : 'text-muted-foreground'}`}>{step.label}</span>
@@ -250,7 +221,6 @@ const NewQuotationPage = () => {
             ))}
           </div>
 
-          {/* Step Content */}
           <div className="bg-card rounded-xl border border-border p-6">
             {currentStep === 0 && (
               <div className="space-y-5">
@@ -317,10 +287,23 @@ const NewQuotationPage = () => {
                         {productos.map((p, i) => (
                           <tr key={p.id} className="border-b border-border last:border-0">
                             <td className="px-3 py-2">
-                              <select value={p.nombre} onChange={e => updateProducto(i, 'nombre', e.target.value)} className="w-full px-2 py-1.5 rounded border border-input bg-card text-sm text-foreground">
+                              <select
+                                value={p.producto_id || ''}
+                                onChange={e => updateProducto(i, 'producto_id', e.target.value)}
+                                className="w-full px-2 py-1.5 rounded border border-input bg-card text-sm text-foreground"
+                              >
                                 <option value="">Seleccionar producto...</option>
-                                {productosDisponibles.map(mp => <option key={mp.id} value={mp.nombre}>{mp.nombre}</option>)}
+                                {productosDisponibles.map(mp => <option key={mp.id} value={mp.id}>{mp.nombre}</option>)}
                               </select>
+                              {!p.producto_id && (
+                                <input
+                                  type="text"
+                                  value={p.nombre}
+                                  onChange={e => updateProducto(i, 'nombre', e.target.value)}
+                                  placeholder="Nombre libre (si no existe)"
+                                  className="mt-2 w-full px-2 py-1.5 rounded border border-input bg-card text-sm text-foreground"
+                                />
+                              )}
                             </td>
                             <td className="px-3 py-2">
                               <input value={p.categoria} readOnly className="w-full px-2 py-1.5 rounded border border-input bg-muted text-sm text-muted-foreground" />
@@ -329,7 +312,7 @@ const NewQuotationPage = () => {
                               <input type="number" min={1} value={p.cantidad} onChange={e => updateProducto(i, 'cantidad', Number(e.target.value))} className="w-full px-2 py-1.5 rounded border border-input bg-card text-sm text-foreground" />
                             </td>
                             <td className="px-3 py-2">
-                              <select value={p.unidad} onChange={e => updateProducto(i, 'unidad', e.target.value)} className="w-full px-2 py-1.5 rounded border border-input bg-card text-sm text-foreground">
+                              <select value={p.unidad} onChange={e => updateProducto(i, 'unidad', e.target.value as Unidad)} className="w-full px-2 py-1.5 rounded border border-input bg-card text-sm text-foreground">
                                 {UNIDADES.map(u => <option key={u} value={u}>{u}</option>)}
                               </select>
                             </td>
@@ -449,7 +432,6 @@ const NewQuotationPage = () => {
             )}
           </div>
 
-          {/* Navigation */}
           <div className="flex justify-between">
             <button
               onClick={() => setCurrentStep(s => s - 1)}

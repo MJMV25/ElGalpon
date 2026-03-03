@@ -15,15 +15,17 @@ class WelcomeUserMail extends Mailable
     public string $nombreUsuario;
     public string $email;
     public string $rol;
+    public string $passwordTemporal;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(string $nombreUsuario, string $email, string $rol)
+    public function __construct(string $nombreUsuario, string $email, string $rol, string $passwordTemporal)
     {
         $this->nombreUsuario = $nombreUsuario;
         $this->email = $email;
         $this->rol = $rol;
+        $this->passwordTemporal = $passwordTemporal;
     }
 
     /**
@@ -56,4 +58,3 @@ class WelcomeUserMail extends Mailable
         return [];
     }
 }
-

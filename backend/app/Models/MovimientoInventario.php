@@ -23,6 +23,7 @@ class MovimientoInventario extends Model
         'precio_compra',
         'lote',
         'motivo',
+        'recibido_por',
         'notas',
     ];
 
@@ -89,4 +90,3 @@ class MovimientoInventario extends Model
         return $query->whereDate('created_at', today());
     }
 }
-

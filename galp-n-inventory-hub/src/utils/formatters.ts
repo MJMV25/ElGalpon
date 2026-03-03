@@ -1,5 +1,5 @@
-export const formatNumber = (num: number): string => {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+﻿export const formatNumber = (num: number): string => {
+  return Number(num || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 };
 
 export const formatCurrency = (num: number): string => {
@@ -8,8 +8,8 @@ export const formatCurrency = (num: number): string => {
   return `$${num}`;
 };
 
-export const formatCurrencyFull = (num: number): string => {
-  return `$${formatNumber(num)}`;
+export const formatCurrencyFull = (num: number | null | undefined): string => {
+  return `$${formatNumber(Number(num || 0))}`;
 };
 
 export const getStockStatus = (stock: number, stockMin: number) => {
@@ -22,9 +22,28 @@ export const getInitials = (name: string): string => {
   return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 };
 
-export const getCategoryEmoji = (cat: string): string => {
-  const emojis: Record<string, string> = {
-    alimentos: '🐕', medicamentos: '💊', suplementos: '💪', insumos: '🌾', accesorios: '🎀'
+export const getCategoryEmoji = (cat: string, icono?: string | null): string => {
+  const normalizedCat = (cat || '').toLowerCase();
+  const iconMap: Record<string, string> = {
+    'fa-bone': '🐕',
+    'fa-pills': '💊',
+    'fa-capsules': '💪',
+    'fa-tractor': '🌾',
+    'fa-paw': '🎀',
+    'fa-file-import': '📦',
   };
-  return emojis[cat] || '📦';
+  const emojis: Record<string, string> = {
+    alimentos: '🐕',
+    medicamentos: '💊',
+    suplementos: '💪',
+    insumos: '🌾',
+    accesorios: '🎀',
+  };
+
+  if (icono && icono.trim()) {
+    const mapped = iconMap[icono.trim()];
+    if (mapped) return mapped;
+  }
+  const key = Object.keys(emojis).find(k => normalizedCat.includes(k)) || normalizedCat;
+  return emojis[key] || '📦';
 };

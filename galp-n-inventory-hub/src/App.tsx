@@ -10,6 +10,7 @@ import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import ProductsPage from "@/pages/ProductsPage";
 import NewProductPage from "@/pages/NewProductPage";
+import InventoryMovementsPage from "@/pages/InventoryMovementsPage";
 import CategoriesPage from "@/pages/CategoriesPage";
 import LowStockPage from "@/pages/LowStockPage";
 import BudgetPage from "@/pages/BudgetPage";
@@ -85,6 +86,7 @@ const AppContent = () => {
         <Route index element={<DashboardPage />} />
         <Route path="productos" element={<ProductsPage />} />
         <Route path="productos/nuevo" element={<AdminRoute><NewProductPage /></AdminRoute>} />
+        <Route path="movimientos-inventario" element={<AdminRoute><InventoryMovementsPage /></AdminRoute>} />
         <Route path="categorias" element={<CategoriesPage />} />
         <Route path="stock-bajo" element={<LowStockPage />} />
         <Route path="presupuesto" element={<BudgetPage />} />

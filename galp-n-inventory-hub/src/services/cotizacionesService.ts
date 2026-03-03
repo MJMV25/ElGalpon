@@ -1,4 +1,4 @@
-import api, { ApiResponse } from '@/lib/api';
+﻿import api, { ApiResponse } from '@/lib/api';
 
 export interface Cotizacion {
   id: number;
@@ -64,7 +64,6 @@ export interface ProductoRespuesta {
   es_producto_extra?: boolean;
 }
 
-// Interfaces para crear cotización
 export interface CotizacionProveedor {
   id: number;
   cotizacion_id: number;
@@ -103,35 +102,49 @@ export interface CotizacionRespuestaDetalle {
   observaciones: string | null;
 }
 
-export interface ComparacionRespuestas {
-  cotizacion: Cotizacion;
-  productos: Array<{
-    id: number;
-    nombre: string;
-    cantidad: number;
-    unidad_medida: string;
-    precios_por_proveedor: Array<{
+export interface ComparacionResponse {
+  cotizacion: {
+    numero: string;
+    titulo: string;
+    fecha_limite: string;
+  };
+  comparacion_productos: Array<{
+    producto_id: number;
+    nombre_producto: string;
+    cantidad_solicitada: number;
+    respuestas: Array<{
       proveedor_id: number;
       proveedor_nombre: string;
       precio_unitario: number;
-      subtotal: number;
-      disponibilidad: string | null;
-      es_mejor_precio: boolean;
+      cantidad_disponible: number | null;
+      tiempo_entrega_dias: number | null;
+      total: number;
+      calificacion_proveedor: number | null;
     }>;
+    mejor_precio: number | null;
+    mejor_proveedor_id: number | null;
   }>;
-  totales_por_proveedor: Array<{
+  resumen_proveedores: Array<{
     proveedor_id: number;
     proveedor_nombre: string;
-    total: number;
-    tiempo_entrega: string | null;
+    estado: string;
+    total_cotizado: number;
     calificacion: number | null;
-    es_recomendado: boolean;
+    tiempo_promedio_entrega: number | null;
   }>;
+  recomendacion: {
+    proveedor_id: number;
+    proveedor_nombre: string;
+    estado: string;
+    total_cotizado: number;
+    calificacion: number | null;
+    tiempo_promedio_entrega: number | null;
+  } | null;
 }
 
 const cotizacionesService = {
   // Obtener todas las cotizaciones
-  getAll: async (params?: { estado?: string }): Promise<ApiResponse<Cotizacion[]>> => {
+  getAll: async (params?: { estado?: string; buscar?: string }): Promise<ApiResponse<Cotizacion[]>> => {
     const response = await api.get('/cotizaciones', { params });
     return response.data;
   },
@@ -143,7 +156,7 @@ const cotizacionesService = {
   },
 
   // Comparar respuestas de una cotización
-  compararRespuestas: async (cotizacionId: number): Promise<ApiResponse<ComparacionRespuestas>> => {
+  compararRespuestas: async (cotizacionId: number): Promise<ApiResponse<ComparacionResponse>> => {
     const response = await api.get(`/cotizaciones/${cotizacionId}/comparar`);
     return response.data;
   },
@@ -152,17 +165,15 @@ const cotizacionesService = {
   create: async (data: {
     titulo: string;
     descripcion?: string;
+    fecha: string;
     fecha_limite: string;
     productos: Array<{
-      producto_id?: number;
-      nombre: string;
-      descripcion?: string;
+      producto_id?: number | null;
+      nombre_producto: string;
       cantidad: number;
-      unidad_medida: string;
-      precio_referencia?: number;
+      especificaciones?: string | null;
     }>;
-    proveedores_ids: number[];
-    observaciones?: string;
+    proveedores: number[];
   }): Promise<ApiResponse<Cotizacion>> => {
     const response = await api.post('/cotizaciones', data);
     return response.data;
@@ -187,10 +198,8 @@ const cotizacionesService = {
   },
 
   // Marcar cotización como completada (solo admin)
-  completar: async (cotizacionId: number, proveedorSeleccionadoId?: number): Promise<ApiResponse<Cotizacion>> => {
-    const response = await api.post(`/cotizaciones/${cotizacionId}/completar`, {
-      proveedor_seleccionado_id: proveedorSeleccionadoId
-    });
+  completar: async (cotizacionId: number): Promise<ApiResponse<Cotizacion>> => {
+    const response = await api.post(`/cotizaciones/${cotizacionId}/completar`);
     return response.data;
   },
 
@@ -202,17 +211,14 @@ const cotizacionesService = {
 
   // Registrar respuesta de proveedor (solo admin)
   registrarRespuesta: async (cotizacionProveedorId: number, data: {
-    total: number;
-    tiempo_entrega?: string;
-    condiciones_pago?: string;
-    validez_oferta?: string;
-    observaciones?: string;
-    detalles: Array<{
+    respuestas: Array<{
       cotizacion_producto_id: number;
       precio_unitario: number;
-      disponibilidad?: string;
-      observaciones?: string;
+      cantidad_disponible?: number;
+      tiempo_entrega_dias?: number;
+      notas?: string;
     }>;
+    notas_generales?: string;
   }): Promise<ApiResponse<CotizacionRespuesta>> => {
     const response = await api.post(`/cotizacion-proveedores/${cotizacionProveedorId}/respuesta`, data);
     return response.data;
@@ -220,4 +226,3 @@ const cotizacionesService = {
 };
 
 export default cotizacionesService;
-

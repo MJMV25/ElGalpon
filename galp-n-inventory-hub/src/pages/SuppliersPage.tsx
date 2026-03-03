@@ -63,8 +63,6 @@ const SuppliersPage = () => {
       setError(null);
       const response = await api.get('/proveedores');
 
-      console.log('📦 Respuesta completa proveedores:', response.data);
-
       // Backend devuelve: { success: true, data: [...] } o { success: true, data: { data: [...], ... } }
       let data;
       if (response.data?.success) {
@@ -84,7 +82,6 @@ const SuppliersPage = () => {
         data = [];
       }
 
-      console.log('👥 Proveedores procesados:', data.length, data);
       setProveedores(data);
     } catch (err: any) {
       console.error('❌ Error cargando proveedores:', err);

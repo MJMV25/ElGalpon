@@ -19,6 +19,8 @@ class CategoriaController extends Controller
 
         if ($request->has('activo')) {
             $query->where('activo', $request->boolean('activo'));
+        } elseif (!$request->boolean('include_inactive', false)) {
+            $query->where('activo', true);
         }
 
         $categorias = $query->orderBy('nombre')->get();
@@ -137,4 +139,3 @@ class CategoriaController extends Controller
         ], 201);
     }
 }
-

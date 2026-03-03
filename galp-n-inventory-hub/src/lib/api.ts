@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 // Crear instancia de axios con configuración base
 const api = axios.create({
@@ -55,4 +55,3 @@ export interface PaginatedResponse<T> {
   per_page: number;
   total: number;
 }
-

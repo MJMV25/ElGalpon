@@ -14,40 +14,43 @@ class UserSeeder extends Seeder
     {
         $usuarios = [
             [
-                'nombre' => 'Manuela Gómez',
+                'nombre' => 'Manuela Gomez',
                 'email' => 'manuela.gomez@elgalpon-alcala.com',
+                'password' => 'Galpon2026!',
                 'rol' => 'admin',
                 'activo' => true,
             ],
             [
-                'nombre' => 'Carlos Manuel Gómez',
+                'nombre' => 'Carlos Manuel Gomez',
                 'email' => 'carlos.gomez@elgalpon-alcala.com',
+                'password' => 'Galpon2026!',
                 'rol' => 'admin',
                 'activo' => true,
             ],
             [
-                'nombre' => 'Sebastián Rodríguez',
+                'nombre' => 'Sebastian Rodriguez',
                 'email' => 'sebastian.rodriguez@elgalpon-alcala.com',
+                'password' => 'Galpon2026!',
                 'rol' => 'empleado',
                 'activo' => true,
             ],
             [
-                'nombre' => 'MJ Muñoz',
+                'nombre' => 'MJ Munoz',
                 'email' => 'mjmunoz_108@cue.edu.co',
+                'password' => 'Galpon2026!',
                 'rol' => 'admin',
                 'activo' => true,
             ],
             [
-                'nombre' => 'S Gómez',
+                'nombre' => 'S Gomez',
                 'email' => 'sgomez_21@cue.edu.co',
+                'password' => 'Galpon2026!',
                 'rol' => 'admin',
                 'activo' => true,
             ],
         ];
 
         foreach ($usuarios as $usuario) {
-            // Usar firstOrCreate en lugar de updateOrCreate
-            // Esto solo crea el usuario si NO existe, pero NO lo actualiza si fue eliminado
             User::firstOrCreate(
                 ['email' => $usuario['email']],
                 $usuario
@@ -55,4 +58,3 @@ class UserSeeder extends Seeder
         }
     }
 }
-

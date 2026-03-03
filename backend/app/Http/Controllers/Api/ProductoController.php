@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Producto;
+use App\Models\Categoria;
+use App\Models\Subcategoria;
 use App\Models\Proveedor;
 use App\Models\MovimientoInventario;
 use App\Models\LogActividad;
@@ -14,6 +16,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use App\Support\ClasificadorCategoriaProducto;
 
 class ProductoController extends Controller
 {
@@ -122,7 +127,7 @@ class ProductoController extends Controller
     }
 
     /**
-     * Mostrar un producto específico
+     * Mostrar un producto especÃ­fico
      */
     public function show(Producto $producto): JsonResponse
     {
@@ -214,6 +219,7 @@ class ProductoController extends Controller
             'precio_compra' => 'nullable|numeric|min:0',
             'proveedor_id' => 'nullable|exists:proveedores,id',
             'lote' => 'nullable|string|max:50',
+            'recibido_por' => 'required|string|max:120',
             'notas' => 'nullable|string',
         ]);
 
@@ -242,6 +248,7 @@ class ProductoController extends Controller
                 'stock_nuevo' => $producto->stock,
                 'precio_compra' => $precioCompra,
                 'lote' => $validated['lote'] ?? null,
+                'recibido_por' => $validated['recibido_por'],
                 'notas' => $validated['notas'] ?? null,
             ]);
 
@@ -281,6 +288,7 @@ class ProductoController extends Controller
         $validated = $request->validate([
             'cantidad' => 'required|integer|min:1',
             'motivo' => 'required|string|max:255',
+            'recibido_por' => 'required|string|max:120',
             'notas' => 'nullable|string',
         ]);
 
@@ -308,11 +316,12 @@ class ProductoController extends Controller
                 'stock_anterior' => $stockAnterior,
                 'stock_nuevo' => $producto->stock,
                 'motivo' => $validated['motivo'],
+                'recibido_por' => $validated['recibido_por'],
                 'notas' => $validated['notas'] ?? null,
             ]);
         });
 
-        // Verificar si el estado cambió a crítico
+        // Verificar si el estado cambiÃ³ a crÃ­tico
         $producto->refresh();
         if ($producto->estado_stock === 'critico' && $estadoAnterior !== 'critico') {
             $this->notificarStockCritico($producto);
@@ -336,7 +345,215 @@ class ProductoController extends Controller
     }
 
     /**
-     * Obtener productos con stock bajo o crítico
+     * Importar productos desde archivo Excel (SIIGO)
+     */
+    public function importarExcel(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'archivo' => 'required|file|mimes:xlsx,xls|max:51200',
+            'sobrescribir_existentes' => 'nullable|boolean',
+            'stock_minimo_default' => 'nullable|integer|min:0|max:10000',
+        ]);
+
+        $sobrescribir = (bool) ($validated['sobrescribir_existentes'] ?? true);
+        $stockMinimoDefault = (int) ($validated['stock_minimo_default'] ?? 5);
+
+        try {
+            $spreadsheet = IOFactory::load($request->file('archivo')->getPathname());
+            $sheet = $spreadsheet->getActiveSheet();
+            $highestRow = $sheet->getHighestDataRow();
+
+            if ($highestRow < 5) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El archivo no contiene filas de productos vÃ¡lidas.',
+                ], 422);
+            }
+
+            $categoriasBase = $this->obtenerCategoriasBaseParaImportacion();
+
+            $errores = [];
+            $creados = 0;
+            $actualizados = 0;
+            $omitidos = 0;
+
+            DB::transaction(function () use (
+                $sheet,
+                $highestRow,
+                $categoriasBase,
+                $sobrescribir,
+                $stockMinimoDefault,
+                &$errores,
+                &$creados,
+                &$actualizados,
+                &$omitidos
+            ) {
+                for ($row = 5; $row <= $highestRow; $row++) {
+                    $tipo = trim((string) $sheet->getCell("A{$row}")->getFormattedValue());
+                    $codigo = trim((string) $sheet->getCell("B{$row}")->getFormattedValue());
+                    $nombre = trim((string) $sheet->getCell("C{$row}")->getFormattedValue());
+                    $unidad = trim((string) $sheet->getCell("D{$row}")->getFormattedValue());
+                    $precioBase = $sheet->getCell("E{$row}")->getCalculatedValue();
+                    $impuestos = trim((string) $sheet->getCell("F{$row}")->getFormattedValue());
+                    $stock = $sheet->getCell("G{$row}")->getCalculatedValue();
+                    $estado = trim((string) $sheet->getCell("H{$row}")->getFormattedValue());
+
+                    if ($codigo === '' && $nombre === '') {
+                        continue;
+                    }
+
+                    if ($codigo === '' || $nombre === '') {
+                        $errores[] = "Fila {$row}: cÃ³digo o nombre vacÃ­o.";
+                        continue;
+                    }
+
+                    if ($tipo !== '' && mb_strtolower($tipo) !== 'producto') {
+                        $omitidos++;
+                        continue;
+                    }
+
+                    $precio = is_numeric($precioBase) ? (float) $precioBase : 0;
+                    $stockInt = is_numeric($stock) ? max((int) $stock, 0) : 0;
+                    $activo = $estado === '' || mb_strtolower($estado) === 'active';
+
+                    [$categoriaDestino, $subcategoriaNombre] = ClasificadorCategoriaProducto::resolver($nombre, $categoriasBase);
+                    $subcategoria = $subcategoriaNombre
+                        ? Subcategoria::firstOrCreate(
+                            [
+                                'categoria_id' => $categoriaDestino->id,
+                                'slug' => Str::slug($subcategoriaNombre),
+                            ],
+                            [
+                                'nombre' => $subcategoriaNombre,
+                                'activo' => true,
+                            ]
+                        )
+                        : null;
+
+                    $payload = [
+                        'codigo' => $codigo,
+                        'nombre' => $nombre,
+                        'descripcion' => $impuestos !== '' ? "Impuesto: {$impuestos}" : null,
+                        'categoria_id' => $categoriaDestino->id,
+                        'subcategoria_id' => $subcategoria?->id,
+                        'precio_compra' => max($precio, 0),
+                        'precio_venta' => max($precio, 0),
+                        'stock' => $stockInt,
+                        'stock_minimo' => $stockMinimoDefault,
+                        'unidad_medida' => $unidad !== '' ? $unidad : 'unidad',
+                        'activo' => $activo,
+                    ];
+
+                    $existente = Producto::where('codigo', $codigo)->first();
+                    if ($existente) {
+                        if (!$sobrescribir) {
+                            $omitidos++;
+                            continue;
+                        }
+
+                        $stockAnterior = $existente->stock;
+                        $existente->update($payload);
+                        $actualizados++;
+
+                        if ($stockInt !== $stockAnterior) {
+                            MovimientoInventario::create([
+                                'producto_id' => $existente->id,
+                                'user_id' => auth()->id(),
+                                'tipo' => 'ajuste',
+                                'cantidad' => abs($stockInt - $stockAnterior),
+                                'stock_anterior' => $stockAnterior,
+                                'stock_nuevo' => $stockInt,
+                                'motivo' => 'ImportaciÃ³n masiva de Excel',
+                                'recibido_por' => auth()->user()?->nombre ?? 'Sistema',
+                                'notas' => 'Ajuste automÃ¡tico por importaciÃ³n masiva',
+                            ]);
+                        }
+
+                        continue;
+                    }
+
+                    $producto = Producto::create($payload);
+                    $creados++;
+
+                    if ($stockInt > 0) {
+                        MovimientoInventario::create([
+                            'producto_id' => $producto->id,
+                            'user_id' => auth()->id(),
+                            'tipo' => 'entrada',
+                            'cantidad' => $stockInt,
+                            'stock_anterior' => 0,
+                            'stock_nuevo' => $stockInt,
+                            'precio_compra' => max($precio, 0),
+                            'motivo' => 'Stock inicial por importaciÃ³n',
+                            'recibido_por' => auth()->user()?->nombre ?? 'Sistema',
+                            'notas' => 'ImportaciÃ³n masiva de productos',
+                        ]);
+                    }
+                }
+            });
+
+            LogActividad::registrar(
+                'importar_productos_excel',
+                auth()->id(),
+                'Producto',
+                null,
+                null,
+                [
+                    'creados' => $creados,
+                    'actualizados' => $actualizados,
+                    'omitidos' => $omitidos,
+                    'errores' => count($errores),
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ImportaciÃ³n de productos completada',
+                'data' => [
+                    'creados' => $creados,
+                    'actualizados' => $actualizados,
+                    'omitidos' => $omitidos,
+                    'errores' => $errores,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error procesando el archivo Excel: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener categorÃ­as estÃ¡ndar usadas en la clasificaciÃ³n automÃ¡tica.
+     */
+    private function obtenerCategoriasBaseParaImportacion(): array
+    {
+        $definiciones = [
+            'alimentos' => ['nombre' => 'Alimentos para Mascotas', 'icono' => 'fa-bone', 'color' => '#3B82F6'],
+            'medicamentos' => ['nombre' => 'Medicamentos Veterinarios', 'icono' => 'fa-pills', 'color' => '#F59E0B'],
+            'suplementos' => ['nombre' => 'Suplementos Animales', 'icono' => 'fa-capsules', 'color' => '#EC4899'],
+            'insumos' => ['nombre' => 'Insumos AgrÃ­colas', 'icono' => 'fa-tractor', 'color' => '#10B981'],
+            'accesorios' => ['nombre' => 'Accesorios para Mascotas', 'icono' => 'fa-paw', 'color' => '#8B5CF6'],
+        ];
+
+        $categorias = [];
+        foreach ($definiciones as $slug => $data) {
+            $categorias[$slug] = Categoria::firstOrCreate(
+                ['slug' => $slug],
+                [
+                    'nombre' => $data['nombre'],
+                    'icono' => $data['icono'],
+                    'color' => $data['color'],
+                    'activo' => true,
+                ]
+            );
+        }
+
+        return $categorias;
+    }
+    /**
+     * Obtener productos con stock bajo o crÃ­tico
      */
     public function stockBajo(): JsonResponse
     {
@@ -382,19 +599,19 @@ class ProductoController extends Controller
     }
 
     /**
-     * Notificar stock crítico a administradores
+     * Notificar stock crÃ­tico a administradores
      */
     private function notificarStockCritico(Producto $producto): void
     {
-        // Crear notificación para todos los admins
+        // Crear notificaciÃ³n para todos los admins
         $admins = User::where('rol', 'admin')->where('activo', true)->get();
 
         foreach ($admins as $admin) {
             Notificacion::create([
                 'user_id' => $admin->id,
                 'tipo' => 'stock_critico',
-                'titulo' => 'Stock Crítico: ' . $producto->nombre,
-                'mensaje' => "El producto {$producto->codigo} - {$producto->nombre} ha llegado a stock crítico. Stock actual: {$producto->stock}",
+                'titulo' => 'Stock CrÃ­tico: ' . $producto->nombre,
+                'mensaje' => "El producto {$producto->codigo} - {$producto->nombre} ha llegado a stock crÃ­tico. Stock actual: {$producto->stock}",
                 'enlace' => "/productos/{$producto->id}",
                 'datos' => [
                     'producto_id' => $producto->id,
@@ -418,7 +635,7 @@ class ProductoController extends Controller
                 Mail::to($admin->email)->queue(new StockCriticoMail($productosData));
             }
         } catch (\Exception $e) {
-            \Log::error('Error enviando email de stock crítico: ' . $e->getMessage());
+            \Log::error('Error enviando email de stock crÃ­tico: ' . $e->getMessage());
         }
     }
 }

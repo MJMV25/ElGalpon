@@ -11,47 +11,43 @@ export interface User {
   updated_at: string;
 }
 
-export interface SolicitarCodigoRequest {
-  email: string;
-}
-
-export interface VerificarCodigoRequest {
-  email: string;
-  codigo: string;
-}
-
 export interface AuthResponse {
   user: User;
   token: string;
   abilities: string[];
 }
 
+export interface LoginStepOneResponse {
+  challenge_token: string;
+  email: string;
+}
+
 const authService = {
-  // Solicitar código de verificación al email
-  solicitarCodigo: async (email: string): Promise<ApiResponse<{ message: string }>> => {
-    const response = await api.post('/auth/solicitar-codigo', { email });
+  // Paso 1: validar correo + contrasena y disparar envio del OTP
+  login: async (email: string, password: string): Promise<ApiResponse<LoginStepOneResponse>> => {
+    const response = await api.post('/auth/login', { email, password });
     return response.data;
   },
 
-  // Verificar código y obtener token
-  verificarCodigo: async (email: string, codigo: string): Promise<ApiResponse<AuthResponse>> => {
-    const response = await api.post('/auth/verificar-codigo', { email, codigo });
+  // Paso 2: verificar OTP y obtener token de sesion
+  verifyLoginCode: async (challengeToken: string, codigo: string): Promise<ApiResponse<AuthResponse>> => {
+    const response = await api.post('/auth/verificar-codigo', {
+      challenge_token: challengeToken,
+      codigo,
+    });
     return response.data;
   },
 
-  // Obtener usuario actual
   me: async (): Promise<ApiResponse<{ user: User; abilities: string[] }>> => {
     const response = await api.get('/auth/me');
     return response.data;
   },
 
-  // Cerrar sesión
   logout: async (): Promise<ApiResponse<{ message: string }>> => {
     const response = await api.post('/auth/logout');
     return response.data;
   },
 
-  // Cerrar todas las sesiones
   logoutAll: async (): Promise<ApiResponse<{ message: string }>> => {
     const response = await api.post('/auth/logout-all');
     return response.data;
@@ -59,4 +55,3 @@ const authService = {
 };
 
 export default authService;
-

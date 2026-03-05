@@ -1,12 +1,12 @@
-import api, { ApiResponse, PaginatedResponse } from '@/lib/api';
+﻿import api, { ApiResponse } from '@/lib/api';
 
 export interface Categoria {
   id: number;
   nombre: string;
   slug: string;
   descripcion: string | null;
-  icono: string;
-  color: string;
+  icono: string | null;
+  color: string | null;
   activo: boolean;
   productos_count?: number;
   subcategorias?: Subcategoria[];
@@ -71,4 +71,3 @@ const categoriasService = {
 };
 
 export default categoriasService;
-

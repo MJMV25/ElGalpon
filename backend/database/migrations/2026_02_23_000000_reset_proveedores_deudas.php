@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -14,7 +15,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::table('proveedores')->update(['deuda' => 0]);
+        if (Schema::hasTable('proveedores') && Schema::hasColumn('proveedores', 'deuda')) {
+            DB::table('proveedores')->update(['deuda' => 0]);
+        }
     }
 
     /**
@@ -25,4 +28,3 @@ return new class extends Migration
         // No revertimos porque las deudas anteriores eran datos de prueba incorrectos
     }
 };
-

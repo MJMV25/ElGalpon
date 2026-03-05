@@ -45,8 +45,6 @@ const QuotationsPage = () => {
       setError(null);
       const response = await api.get('/cotizaciones');
 
-      console.log('📦 Respuesta cotizaciones:', response.data);
-
       let data: Cotizacion[] = [];
       if (response.data?.success) {
         if (Array.isArray(response.data.data?.data)) {

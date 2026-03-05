@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\NotificacionController;
 
 // Rutas públicas de autenticación
 Route::prefix('auth')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
     Route::post('/solicitar-codigo', [AuthController::class, 'solicitarCodigo']);
     Route::post('/verificar-codigo', [AuthController::class, 'verificarCodigo']);
 });
@@ -78,6 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/movimientos', [ReporteController::class, 'movimientos']);
         Route::get('/productos-por-categoria', [ReporteController::class, 'productosPorCategoria']);
         Route::get('/productos-mas-movidos', [ReporteController::class, 'productosMasMovidos']);
+        Route::get('/deudas-proveedores', [ReporteController::class, 'deudasProveedores']);
         Route::get('/stock-alerta', [ReporteController::class, 'stockAlerta']);
     });
 
@@ -96,6 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Gestión de productos
         Route::post('/productos', [ProductoController::class, 'store']);
+        Route::post('/productos/importar-excel', [ProductoController::class, 'importarExcel']);
         Route::put('/productos/{producto}', [ProductoController::class, 'update']);
         Route::delete('/productos/{producto}', [ProductoController::class, 'destroy']);
         Route::post('/productos/{producto}/entrada', [ProductoController::class, 'entradaStock']);

@@ -56,10 +56,13 @@ class UserController extends Controller
             'nombre' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'rol' => 'required|in:admin,empleado',
+            'password' => 'nullable|string|min:8',
         ]);
 
         $validated['email'] = strtolower($validated['email']);
         $validated['activo'] = true;
+        $plainPassword = $validated['password'] ?? 'Galpon2026!';
+        $validated['password'] = $plainPassword;
 
         $user = User::create($validated);
 
@@ -78,7 +81,8 @@ class UserController extends Controller
             Mail::to($user->email)->send(new WelcomeUserMail(
                 $user->nombre,
                 $user->email,
-                $user->rol
+                $user->rol,
+                $plainPassword
             ));
         } catch (\Exception $e) {
             // Log error pero no fallar la creación
@@ -118,6 +122,7 @@ class UserController extends Controller
             ],
             'rol' => 'sometimes|required|in:admin,empleado',
             'activo' => 'sometimes|boolean',
+            'password' => 'sometimes|required|string|min:8',
         ]);
 
         if (isset($validated['email'])) {
@@ -237,4 +242,3 @@ class UserController extends Controller
         ]);
     }
 }
-

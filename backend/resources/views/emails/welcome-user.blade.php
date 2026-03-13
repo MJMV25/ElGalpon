@@ -27,10 +27,13 @@
             <p><strong>Email:</strong> {{ $email }}</p>
             <p><strong>Contrasena temporal:</strong> {{ $passwordTemporal }}</p>
             <p><strong>Rol:</strong> <span class="highlight">{{ ucfirst($rol) }}</span></p>
+            <p><strong>Enlace de primer acceso:</strong><br><a href="{{ $primerAccesoUrl }}">{{ $primerAccesoUrl }}</a></p>
+            <p><strong>Vence:</strong> {{ $expiraEn }}</p>
         </div>
 
-        <p>Para iniciar sesion, ingresa tu email y tu contrasena temporal.</p>
+        <p>Para iniciar sesion por primera vez, usa el enlace seguro anterior. Luego ingresa tu email y contrasena temporal.</p>
         <p>Te recomendamos cambiar la contrasena cuando ingreses por primera vez.</p>
+        <p>Si el enlace expiro, solicita al administrador que regenere el acceso.</p>
 
         <p>Bienvenido al equipo.</p>
     </div>

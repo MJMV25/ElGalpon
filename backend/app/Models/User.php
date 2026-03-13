@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -22,6 +23,13 @@ class User extends Authenticatable
         'password',
         'rol',
         'activo',
+        'estado_cuenta',
+        'ultimo_acceso',
+        'ip_ultimo_acceso',
+        'creado_por',
+        'primer_acceso_token',
+        'primer_acceso_expira_en',
+        'primer_acceso_completado_en',
     ];
 
     /**
@@ -32,6 +40,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'primer_acceso_token',
     ];
 
     /**
@@ -45,6 +54,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'activo' => 'boolean',
+            'ultimo_acceso' => 'datetime',
+            'primer_acceso_expira_en' => 'datetime',
+            'primer_acceso_completado_en' => 'datetime',
         ];
     }
 
@@ -70,5 +82,10 @@ class User extends Authenticatable
     public function scopeActivos($query)
     {
         return $query->where('activo', true);
+    }
+
+    public function creadoPor(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'creado_por');
     }
 }

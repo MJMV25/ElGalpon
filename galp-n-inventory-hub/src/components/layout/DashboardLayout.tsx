@@ -5,6 +5,8 @@ import Header from './Header';
 
 const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
+  '/panel-dueno': 'Panel del Dueno',
+  '/auditoria': 'Auditoria',
   '/productos': 'Productos',
   '/productos/nuevo': 'Agregar Producto',
   '/categorias': 'Categorías',

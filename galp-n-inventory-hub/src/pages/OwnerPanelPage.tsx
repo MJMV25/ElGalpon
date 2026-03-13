@@ -64,7 +64,7 @@ const OwnerPanelPage = () => {
       <section className="rounded-2xl border border-border bg-gradient-to-r from-sidebar to-primary p-5 sm:p-6 text-primary-foreground shadow-md">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold">Panel del Dueno</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">Panel del Dueño</h1>
             <p className="text-primary-foreground/85 text-sm mt-1">
               Vista ejecutiva principal para controlar ventas, inventario y riesgos desde una sola pantalla.
             </p>

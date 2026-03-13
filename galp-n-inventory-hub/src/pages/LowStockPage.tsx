@@ -181,7 +181,7 @@ const LowStockPage = () => {
         <button onClick={() => navigate('/productos')} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted flex items-center gap-1"><Package className="w-3.5 h-3.5" /> Productos</button>
         <button onClick={() => navigate('/movimientos-inventario')} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted flex items-center gap-1"><ArrowLeftRight className="w-3.5 h-3.5" /> Entradas y Salidas</button>
         <button onClick={() => navigate('/reportes')} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted flex items-center gap-1"><FileBarChart2 className="w-3.5 h-3.5" /> Reportes</button>
-        <button onClick={() => navigate('/panel-dueno')} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted flex items-center gap-1"><Crown className="w-3.5 h-3.5" /> Panel del Dueño</button>
+        <button onClick={() => navigate('/panel-dueno')} className="px-3 py-1.5 text-xs rounded-md border border-border hover:bg-muted flex items-center gap-1"><Crown className="w-3.5 h-3.5" /> Panel del DueÃ±o</button>
       </div>
 
       <div className="bg-card rounded-xl border border-border p-3 sm:p-4">

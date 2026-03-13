@@ -144,7 +144,7 @@ const DashboardPage = () => {
     { label: 'Entradas y Salidas', desc: 'Movimientos de inventario', icon: ArrowLeftRight, to: '/movimientos-inventario' },
     { label: 'Stock Bajo', desc: 'Alertas de reposicion', icon: TriangleAlert, to: '/stock-bajo' },
     { label: 'Reportes', desc: 'Analisis y exportes', icon: BarChart3, to: '/reportes' },
-    { label: 'Panel del Dueno', desc: 'Vista ejecutiva avanzada', icon: Crown, to: '/panel-dueno', adminOnly: true },
+    { label: 'Panel del Dueño', desc: 'Vista ejecutiva avanzada', icon: Crown, to: '/panel-dueno', adminOnly: true },
   ] as const;
 
   return (
@@ -336,7 +336,7 @@ const DashboardPage = () => {
                 </span>
                 <div className={`w-2 h-2 rounded-full shrink-0 ${a.tipo === 'entrada' ? 'bg-success' : a.tipo === 'salida' ? 'bg-destructive' : 'bg-info'}`} />
                 <p className="text-foreground min-w-0 flex-1 truncate">
-                  <span className="font-medium">{a.user?.nombre || 'Sistema'}</span> registr� <span className="font-medium">{a.tipo}</span> de {a.producto?.nombre || 'Producto'}
+                  <span className="font-medium">{a.user?.nombre || 'Sistema'}</span> registró <span className="font-medium">{a.tipo}</span> de {a.producto?.nombre || 'Producto'}
                 </p>
               </div>
             ))}

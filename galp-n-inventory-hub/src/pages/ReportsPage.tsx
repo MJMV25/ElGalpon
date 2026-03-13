@@ -9,10 +9,10 @@ type ReportKey = ReporteExportKey;
 const reports: Array<{ key: ReportKey; title: string; desc: string; icon: any; color: string }> = [
   { key: 'inventario', title: 'Inventario Completo', desc: 'Listado detallado de todos los productos con stock, precios y valores', icon: Package, color: 'bg-info' },
   { key: 'stock', title: 'Productos Bajo Stock', desc: 'Lista de productos que requieren reabastecimiento urgente', icon: AlertTriangle, color: 'bg-warning' },
-  { key: 'categorias', title: 'Análisis por Categoría', desc: 'Distribución de productos y valores por cada categoría', icon: BarChart3, color: 'bg-cat-accesorios' },
-  { key: 'valoracion', title: 'Valoración Financiera', desc: 'Análisis de costos, precios de venta y márgenes de ganancia', icon: DollarSign, color: 'bg-success' },
+  { key: 'categorias', title: 'AnÃ¡lisis por CategorÃ­a', desc: 'DistribuciÃ³n de productos y valores por cada categorÃ­a', icon: BarChart3, color: 'bg-cat-accesorios' },
+  { key: 'valoracion', title: 'ValoraciÃ³n Financiera', desc: 'AnÃ¡lisis de costos, precios de venta y mÃ¡rgenes de ganancia', icon: DollarSign, color: 'bg-success' },
   { key: 'movimientos', title: 'Movimientos de Inventario', desc: 'Historial de entradas y salidas de productos', icon: ArrowLeftRight, color: 'bg-info' },
-  { key: 'proveedores', title: 'Reporte de Proveedores', desc: 'Lista de proveedores con información de contacto', icon: Truck, color: 'bg-cat-suplementos' },
+  { key: 'proveedores', title: 'Reporte de Proveedores', desc: 'Lista de proveedores con informaciÃ³n de contacto', icon: Truck, color: 'bg-cat-suplementos' },
 ];
 
 const ReportsPage = () => {

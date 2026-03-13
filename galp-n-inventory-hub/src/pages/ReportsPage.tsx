@@ -1,11 +1,10 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import { Package, AlertTriangle, BarChart3, DollarSign, ArrowLeftRight, Truck } from 'lucide-react';
-import reportesService from '@/services/reportesService';
-import proveedoresService from '@/services/proveedoresService';
+import reportesService, { ReporteExportFormat, ReporteExportKey } from '@/services/reportesService';
 
-type ReportKey = 'inventario' | 'stock' | 'categorias' | 'valoracion' | 'movimientos' | 'proveedores';
+type ReportKey = ReporteExportKey;
 
 const reports: Array<{ key: ReportKey; title: string; desc: string; icon: any; color: string }> = [
   { key: 'inventario', title: 'Inventario Completo', desc: 'Listado detallado de todos los productos con stock, precios y valores', icon: Package, color: 'bg-info' },
@@ -19,8 +18,7 @@ const reports: Array<{ key: ReportKey; title: string; desc: string; icon: any; c
 const ReportsPage = () => {
   const [generatingKey, setGeneratingKey] = useState<ReportKey | null>(null);
 
-  const downloadFile = (content: string, fileName: string, mimeType: string) => {
-    const blob = new Blob([content], { type: mimeType });
+  const triggerDownload = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -29,135 +27,29 @@ const ReportsPage = () => {
     URL.revokeObjectURL(url);
   };
 
-  const toCsv = (rows: Array<Array<string | number | null>>) => {
-    return rows
-      .map(cols => cols.map(col => `"${String(col ?? '').replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+  const resolveDefaultParams = (report: ReportKey): Record<string, string> | undefined => {
+    if (report !== 'movimientos') {
+      return undefined;
+    }
+
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 30);
+
+    return {
+      fecha_desde: start.toISOString().slice(0, 10),
+      fecha_hasta: end.toISOString().slice(0, 10),
+    };
   };
 
-  const handleGenerate = async (report: typeof reports[number], format: 'excel' | 'pdf' = 'excel') => {
+  const handleGenerate = async (report: typeof reports[number], format: ReporteExportFormat = 'excel') => {
     try {
       setGeneratingKey(report.key);
-      const today = new Date().toISOString().slice(0, 10);
-
-      if (report.key === 'inventario') {
-        const response = await reportesService.getInventarioValorizado();
-        if (!response.success) throw new Error(response.message);
-        const rows = [
-          ['codigo', 'nombre', 'categoria', 'subcategoria', 'proveedor', 'stock', 'stock_minimo', 'precio_compra', 'precio_venta', 'valor_inventario'],
-          ...response.data.detalle.map(p => [
-            p.codigo,
-            p.nombre,
-            p.categoria,
-            p.subcategoria || '',
-            p.proveedor || '',
-            p.stock,
-            p.stock_minimo,
-            p.precio_compra,
-            p.precio_venta,
-            p.valor_inventario,
-          ])
-        ];
-        const csv = toCsv(rows);
-        downloadFile(csv, `inventario-${today}.csv`, 'text/csv;charset=utf-8;');
-      }
-
-      if (report.key === 'stock') {
-        const response = await reportesService.getStockAlerta();
-        if (!response.success) throw new Error(response.message);
-        const productos = [...response.data.criticos.productos, ...response.data.bajos.productos];
-        const rows = [
-          ['codigo', 'producto', 'categoria', 'stock_actual', 'stock_minimo', 'estado'],
-          ...productos.map(p => [p.codigo, p.nombre, p.categoria?.nombre || '', p.stock, p.stock_minimo, p.estado_stock])
-        ];
-        const csv = toCsv(rows);
-        downloadFile(csv, `stock-bajo-${today}.csv`, 'text/csv;charset=utf-8;');
-      }
-
-      if (report.key === 'categorias') {
-        const response = await reportesService.getProductosPorCategoria();
-        if (!response.success) throw new Error(response.message);
-        const rows = [
-          ['categoria', 'total_productos', 'total_stock', 'valor_inventario', 'valor_venta'],
-          ...response.data.map(c => [c.nombre, c.total_productos, c.total_stock, c.valor_inventario, c.valor_venta])
-        ];
-        const csv = toCsv(rows);
-        downloadFile(csv, `categorias-${today}.csv`, 'text/csv;charset=utf-8;');
-      }
-
-      if (report.key === 'valoracion') {
-        const response = await reportesService.getInventarioValorizado();
-        if (!response.success) throw new Error(response.message);
-        const resumen = response.data.resumen;
-        const rows = [
-          ['metrico', 'valor'],
-          ['total_productos', resumen.total_productos],
-          ['total_unidades', resumen.total_unidades],
-          ['valor_compra', resumen.valor_compra],
-          ['valor_venta', resumen.valor_venta],
-          ['ganancia_potencial', resumen.ganancia_potencial],
-          ['margen_promedio', resumen.margen_promedio],
-        ];
-        const csv = toCsv(rows);
-        downloadFile(csv, `valoracion-${today}.csv`, 'text/csv;charset=utf-8;');
-      }
-
-      if (report.key === 'movimientos') {
-        const end = new Date();
-        const start = new Date();
-        start.setDate(end.getDate() - 30);
-        const response = await reportesService.getMovimientos({
-          fecha_desde: start.toISOString().slice(0, 10),
-          fecha_hasta: end.toISOString().slice(0, 10),
-        });
-        if (!response.success) throw new Error(response.message);
-        const rows = [
-          ['fecha', 'tipo', 'producto', 'cantidad', 'usuario', 'proveedor'],
-          ...response.data.movimientos.map(m => [
-            m.created_at,
-            m.tipo,
-            m.producto?.nombre || '',
-            m.cantidad,
-            m.user?.nombre || '',
-            m.proveedor?.nombre_empresa || '',
-          ])
-        ];
-        const csv = toCsv(rows);
-        downloadFile(csv, `movimientos-${today}.csv`, 'text/csv;charset=utf-8;');
-      }
-
-      if (report.key === 'proveedores') {
-        const response = await proveedoresService.getAll({ per_page: 'all' });
-        if (!response.success) throw new Error(response.message);
-        const rows = [
-          ['empresa', 'nit', 'ciudad', 'email_comercial', 'telefono_contacto', 'asesor'],
-          ...response.data.map(p => [
-            p.nombre_empresa,
-            p.nit,
-            p.ciudad,
-            p.email_comercial,
-            p.telefono_contacto,
-            p.nombre_asesor,
-          ])
-        ];
-        const csv = toCsv(rows);
-        downloadFile(csv, `proveedores-${today}.csv`, 'text/csv;charset=utf-8;');
-      }
-
-      if (format === 'pdf') {
-        const txt = [
-          `EL GALPON - ${report.title}`,
-          `Generado: ${new Date().toLocaleString('es-CO')}`,
-          '',
-          'Este archivo es un resumen exportado desde el sistema.',
-          'Si necesitas un PDF real, podemos integrarlo en el próximo paso.',
-        ].join('\n');
-        downloadFile(txt, `${report.title.toLowerCase().replace(/\s+/g, '-')}.txt`, 'text/plain;charset=utf-8;');
-      }
-
-      toast.success(`Reporte generado: ${report.title}`);
+      const payload = await reportesService.exportarReporte(report.key, format, resolveDefaultParams(report.key));
+      triggerDownload(payload.blob, payload.filename);
+      toast.success(`Reporte generado: ${report.title} (${format.toUpperCase()})`);
     } catch (error: any) {
-      toast.error(error?.message || 'No se pudo generar el reporte');
+      toast.error(error?.response?.data?.message || error?.message || 'No se pudo generar el reporte');
     } finally {
       setGeneratingKey(null);
     }
@@ -199,7 +91,7 @@ const ReportsPage = () => {
       </div>
 
       <div className="text-xs text-muted-foreground">
-        Consejo: si necesitas PDF real o plantillas Excel formateadas, dime y lo dejamos listo hoy mismo.
+        Descarga profesional disponible en Excel y PDF con datos reales del sistema.
       </div>
     </div>
   );

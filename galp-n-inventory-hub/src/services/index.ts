@@ -6,6 +6,7 @@ export { default as cotizacionesService } from './cotizacionesService';
 export { default as reportesService } from './reportesService';
 export { default as usuariosService } from './usuariosService';
 export { default as notificacionesService } from './notificacionesService';
+export { default as auditoriaService } from './auditoriaService';
 
 // Re-export types
 export type { User, AuthResponse } from './authService';
@@ -16,3 +17,4 @@ export type { Cotizacion, CotizacionProducto, CotizacionProveedor, CotizacionRes
 export type { DashboardData, InventarioValorizadoResponse, MovimientosReporte, ProductoPorCategoria, StockAlertaResponse, DeudasProveedoresResponse, MovimientosFiltro } from './reportesService';
 export type { CreateUserData, UpdateUserData } from './usuariosService';
 export type { Notificacion } from './notificacionesService';
+export type { AuditoriaItem, AuditoriaFiltros, AuditoriaMetaFiltros } from './auditoriaService';

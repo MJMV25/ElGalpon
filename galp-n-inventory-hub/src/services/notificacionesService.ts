@@ -3,7 +3,19 @@ import api, { ApiResponse } from '@/lib/api';
 export interface Notificacion {
   id: number;
   user_id: number;
-  tipo: 'stock_bajo' | 'stock_critico' | 'cotizacion_respuesta' | 'cotizacion_vencer' | 'pago_recordatorio' | 'sistema';
+  tipo:
+    | 'stock_bajo'
+    | 'stock_critico'
+    | 'stock_agotado'
+    | 'cotizacion_respuesta'
+    | 'cotizacion_vencer'
+    | 'pago_recordatorio'
+    | 'ajuste_grande_inventario'
+    | 'cambio_precio_fuerte'
+    | 'movimiento_sospechoso'
+    | 'producto_sin_movimiento'
+    | 'sincronizacion_error'
+    | 'sistema';
   titulo: string;
   mensaje: string;
   datos: Record<string, any> | null;

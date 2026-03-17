@@ -69,6 +69,7 @@ export interface ProductosFilter {
   order_dir?: 'asc' | 'desc';
   page?: number;
   per_page?: number | 'all';
+  signal?: AbortSignal;
 }
 
 export interface MovimientosFilter {
@@ -106,7 +107,13 @@ export interface ProductoBusqueda {
 const productosService = {
   // Obtener todos los productos (paginado)
   getAll: async (filters?: ProductosFilter): Promise<ApiResponse<PaginatedResponse<Producto>>> => {
-    const response = await api.get('/productos', { params: filters });
+    const response = await api.get('/productos', {
+      params: {
+        ...filters,
+        signal: undefined,
+      },
+      signal: filters?.signal,
+    });
     return response.data;
   },
 

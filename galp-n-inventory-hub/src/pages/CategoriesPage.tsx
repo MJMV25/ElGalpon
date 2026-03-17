@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import categoriasService, { Categoria } from '@/services/categoriasService';
-import reportesService, { ProductoPorCategoria } from '@/services/reportesService';
 import { formatCurrencyFull, getCategoryEmoji } from '@/utils/formatters';
 import { ChevronRight, Search, Package, Wallet, Layers3, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,7 +13,6 @@ const CategoriesPage = () => {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [reportData, setReportData] = useState<ProductoPorCategoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -29,13 +27,9 @@ const CategoriesPage = () => {
   const load = async () => {
     try {
       setLoading(true);
-      const [catsRes, reportRes] = await Promise.all([
-        categoriasService.getAll(),
-        reportesService.getProductosPorCategoria(),
-      ]);
+      const catsRes = await categoriasService.getAll({ include_metrics: true });
 
       if (catsRes.success) setCategorias(catsRes.data || []);
-      if (reportRes.success) setReportData(reportRes.data || []);
     } catch {
       toast.error('No se pudieron cargar las categorias');
     } finally {
@@ -48,17 +42,13 @@ const CategoriesPage = () => {
   }, []);
 
   const enriched = useMemo(() => {
-    const map = new Map(reportData.map(r => [r.id, r]));
-    return categorias.map(cat => {
-      const report = map.get(cat.id);
-      return {
-        ...cat,
-        totalProductos: report?.total_productos ?? cat.productos_count ?? 0,
-        valorInventario: report?.valor_inventario ?? 0,
-        subcategoriasLista: (cat.subcategorias || []).map(s => s.nombre),
-      };
-    });
-  }, [categorias, reportData]);
+    return categorias.map(cat => ({
+      ...cat,
+      totalProductos: cat.total_productos ?? cat.productos_count ?? 0,
+      valorInventario: Number(cat.valor_inventario ?? 0),
+      subcategoriasLista: (cat.subcategorias || []).map(s => s.nombre),
+    }));
+  }, [categorias]);
 
   const filtered = useMemo(
     () => enriched.filter(cat => {

@@ -28,7 +28,37 @@ class ProductoController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Producto::with(['categoria', 'subcategoria', 'proveedor'])
+        $orderBy = $request->get('order_by', 'nombre');
+        $orderDir = strtolower($request->get('order_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $allowedOrderBy = ['nombre', 'codigo', 'stock', 'precio_compra', 'precio_venta', 'created_at', 'updated_at'];
+
+        $query = Producto::query()
+            ->select([
+                'id',
+                'codigo',
+                'nombre',
+                'descripcion',
+                'categoria_id',
+                'subcategoria_id',
+                'proveedor_id',
+                'precio_compra',
+                'precio_venta',
+                'stock',
+                'stock_minimo',
+                'unidad_medida',
+                'lote',
+                'fecha_vencimiento',
+                'ubicacion',
+                'activo',
+                'estado_stock',
+                'created_at',
+                'updated_at',
+            ])
+            ->with([
+                'categoria:id,nombre,color,icono',
+                'subcategoria:id,nombre',
+                'proveedor:id,nombre_empresa',
+            ])
             ->withMax('movimientos as ultimo_movimiento_at', 'created_at');
 
         // Filtros
@@ -57,11 +87,14 @@ class ProductoController extends Controller
         }
 
         // Ordenamiento
-        $orderBy = $request->get('order_by', 'nombre');
-        $orderDir = $request->get('order_dir', 'asc');
+        if (!in_array($orderBy, $allowedOrderBy, true)) {
+            $orderBy = 'nombre';
+        }
+
         $query->orderBy($orderBy, $orderDir);
 
-        $productos = $query->paginate($request->get('per_page', 15));
+        $perPage = max(1, min((int) $request->get('per_page', 15), 50));
+        $productos = $query->paginate($perPage);
 
         return response()->json([
             'success' => true,

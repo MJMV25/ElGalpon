@@ -24,6 +24,7 @@ const ProductsPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedProductDetail, setSelectedProductDetail] = useState<Producto | null>(null);
@@ -35,6 +36,7 @@ const ProductsPage = () => {
     const q = params.get('q') || '';
     const categoriaId = params.get('categoria_id') || '';
     setSearch(q);
+    setDebouncedSearch(q);
     setCatFilter(categoriaId);
     setPage(1);
   }, [params]);
@@ -53,10 +55,17 @@ const ProductsPage = () => {
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      loadProductos(page, search, catFilter);
-    }, 300);
+      setDebouncedSearch(search);
+    }, 250);
+
     return () => clearTimeout(handler);
-  }, [page, search, catFilter]);
+  }, [search]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadProductos(page, debouncedSearch, catFilter, controller.signal);
+    return () => controller.abort();
+  }, [page, debouncedSearch, catFilter]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -81,7 +90,7 @@ const ProductsPage = () => {
     loadDetalle();
   }, [selectedId]);
 
-  const loadProductos = async (currentPage: number, term: string, categoriaId: string) => {
+  const loadProductos = async (currentPage: number, term: string, categoriaId: string, signal?: AbortSignal) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -90,6 +99,7 @@ const ProductsPage = () => {
         buscar: term || undefined,
         categoria_id: categoriaId ? Number(categoriaId) : undefined,
         per_page: 15,
+        signal,
       });
       if (response.success) {
         const pageData = response.data;
@@ -100,6 +110,9 @@ const ProductsPage = () => {
         throw new Error(response.message || 'No se pudieron cargar los productos');
       }
     } catch (err: any) {
+      if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') {
+        return;
+      }
       setError(err.response?.data?.message || 'No se pudieron cargar los productos');
       setProductos([]);
       setTotal(0);
@@ -196,7 +209,7 @@ const ProductsPage = () => {
       await productosService.delete(producto.id);
       toast.success('Producto eliminado correctamente');
       if (selectedId === producto.id) setSelectedId(null);
-      loadProductos(page, search, catFilter);
+      loadProductos(page, debouncedSearch, catFilter);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'No se pudo eliminar el producto');
     }
@@ -234,7 +247,7 @@ const ProductsPage = () => {
           toast.success(resumen);
         }
 
-        await loadProductos(1, search, catFilter);
+        await loadProductos(1, debouncedSearch, catFilter);
         setPage(1);
       } else {
         toast.error(response.message || 'No se pudo importar el archivo');
@@ -282,7 +295,7 @@ const ProductsPage = () => {
             <span className="hidden xs:inline">Exportar</span>
           </button>
           <button
-            onClick={() => loadProductos(page, search, catFilter)}
+            onClick={() => loadProductos(page, debouncedSearch, catFilter)}
             disabled={isLoading}
             className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground flex items-center justify-center gap-1.5 hover:bg-muted transition-colors"
           >
@@ -356,7 +369,7 @@ const ProductsPage = () => {
       ) : error ? (
         <div className="bg-destructive/10 text-destructive p-4 rounded-lg text-center">
           {error}
-          <button onClick={() => loadProductos(page, search, catFilter)} className="ml-4 underline">Reintentar</button>
+          <button onClick={() => loadProductos(page, debouncedSearch, catFilter)} className="ml-4 underline">Reintentar</button>
         </div>
       ) : (
         <>

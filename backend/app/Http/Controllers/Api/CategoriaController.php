@@ -7,6 +7,7 @@ use App\Models\Categoria;
 use App\Models\Subcategoria;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class CategoriaController extends Controller
 {
@@ -15,12 +16,55 @@ class CategoriaController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Categoria::with('subcategorias');
+        $includeMetrics = $request->boolean('include_metrics', false);
+        $query = Categoria::query()
+            ->select([
+                'categorias.id',
+                'categorias.nombre',
+                'categorias.slug',
+                'categorias.descripcion',
+                'categorias.icono',
+                'categorias.color',
+                'categorias.activo',
+                'categorias.created_at',
+                'categorias.updated_at',
+            ])
+            ->with(['subcategorias' => function ($subquery) {
+                $subquery->select([
+                    'id',
+                    'categoria_id',
+                    'nombre',
+                    'slug',
+                    'descripcion',
+                    'activo',
+                    'created_at',
+                    'updated_at',
+                ])->orderBy('nombre');
+            }])
+            ->withCount('productos');
+
+        if ($includeMetrics) {
+            $metricasProductos = DB::table('productos')
+                ->select('categoria_id')
+                ->selectRaw('COUNT(*) as total_productos')
+                ->selectRaw('COALESCE(SUM(stock), 0) as total_stock')
+                ->selectRaw('COALESCE(SUM(stock * precio_compra), 0) as valor_inventario')
+                ->where('activo', true)
+                ->groupBy('categoria_id');
+
+            $query->leftJoinSub($metricasProductos, 'metricas_productos', function ($join) {
+                $join->on('categorias.id', '=', 'metricas_productos.categoria_id');
+            })->addSelect([
+                DB::raw('COALESCE(metricas_productos.total_productos, 0) as total_productos'),
+                DB::raw('COALESCE(metricas_productos.total_stock, 0) as total_stock'),
+                DB::raw('COALESCE(metricas_productos.valor_inventario, 0) as valor_inventario'),
+            ]);
+        }
 
         if ($request->has('activo')) {
-            $query->where('activo', $request->boolean('activo'));
+            $query->where('categorias.activo', $request->boolean('activo'));
         } elseif (!$request->boolean('include_inactive', false)) {
-            $query->where('activo', true);
+            $query->where('categorias.activo', true);
         }
 
         $categorias = $query->orderBy('nombre')->get();

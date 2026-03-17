@@ -29,6 +29,9 @@ class AuthController extends Controller
 
         $email = strtolower($request->email);
         $password = $request->password;
+        $mostrarCodigoEnRespuesta = (bool) env('AUTH_EXPOSE_OTP', false)
+            || app()->environment('local')
+            || config('app.debug');
 
         $key = 'password-login-attempt:' . $email;
         if (RateLimiter::tooManyAttempts($key, 5)) {
@@ -41,7 +44,10 @@ class AuthController extends Controller
 
         RateLimiter::hit($key, 60);
 
-        $user = User::where('email', $email)->first();
+        $user = User::query()
+            ->select(['id', 'nombre', 'email', 'password', 'rol', 'activo', 'estado_cuenta'])
+            ->where('email', $email)
+            ->first();
 
         if (!$user || !$user->password || !Hash::check($password, $user->password)) {
             return response()->json([
@@ -75,29 +81,27 @@ class AuthController extends Controller
             'email' => $email,
         ], now()->addMinutes(10));
 
-        try {
-            dispatch(function () use ($email, $codigo, $user) {
-                Mail::to($email)->send(new VerificationCodeMail($codigo, $user->nombre));
-            })->afterResponse();
-        } catch (\Throwable $e) {
-            Cache::forget('login-challenge:' . $challengeToken);
-            \Log::warning('Error al enviar email: ' . $e->getMessage());
+        if (!$mostrarCodigoEnRespuesta) {
+            try {
+                dispatch(function () use ($email, $codigo, $user) {
+                    Mail::to($email)->send(new VerificationCodeMail($codigo, $user->nombre));
+                })->afterResponse();
+            } catch (\Throwable $e) {
+                Cache::forget('login-challenge:' . $challengeToken);
+                \Log::warning('Error al enviar email: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al enviar el correo. Intenta de nuevo.',
-            ], 500);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al enviar el correo. Intenta de nuevo.',
+                ], 500);
+            }
         }
 
         RateLimiter::clear($key);
 
-        $mostrarCodigoEnRespuesta = (bool) env('AUTH_EXPOSE_OTP', false)
-            || app()->environment('local')
-            || config('app.debug');
-
         $mensaje = 'Codigo enviado al correo. Verifica para completar el acceso.';
         if ($mostrarCodigoEnRespuesta) {
-            $mensaje .= " Codigo de acceso: {$codigo}";
+            $mensaje = 'Codigo generado correctamente. Verifica para completar el acceso.';
         }
 
         return response()->json([
@@ -155,7 +159,20 @@ class AuthController extends Controller
         }
 
         $email = $challenge['email'];
-        $user = User::find($challenge['user_id']);
+        $user = User::query()
+            ->select([
+                'id',
+                'nombre',
+                'email',
+                'rol',
+                'activo',
+                'estado_cuenta',
+                'ultimo_acceso',
+                'created_at',
+                'updated_at',
+                'primer_acceso_completado_en',
+            ])
+            ->find($challenge['user_id']);
 
         if (!$user || !$user->activo || strtolower($user->email) !== strtolower($email)) {
             Cache::forget('login-challenge:' . $challengeToken);

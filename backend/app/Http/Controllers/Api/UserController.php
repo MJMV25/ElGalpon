@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\LogActividad;
 use App\Mail\WelcomeUserMail;
-use Illuminate\Http\Request;
+use App\Models\LogActividad;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    private const FIRST_ACCESS_EXPIRATION_HOURS = 48;
+
     /**
      * Listar todos los usuarios
      */
@@ -20,7 +24,6 @@ class UserController extends Controller
     {
         $query = User::query();
 
-        // Filtros
         if ($request->has('rol')) {
             $query->where('rol', $request->rol);
         }
@@ -33,13 +36,11 @@ class UserController extends Controller
             $termino = $request->buscar;
             $query->where(function ($q) use ($termino) {
                 $q->where('nombre', 'like', "%{$termino}%")
-                  ->orWhere('email', 'like', "%{$termino}%");
+                    ->orWhere('email', 'like', "%{$termino}%");
             });
         }
 
         $usuarios = $query->orderBy('nombre')->paginate($request->get('per_page', 15));
-
-        \Log::info("GET /usuarios - Total usuarios en BD: " . User::count() . " - Devolviendo: " . $usuarios->total());
 
         return response()->json([
             'success' => true,
@@ -61,31 +62,48 @@ class UserController extends Controller
 
         $validated['email'] = strtolower($validated['email']);
         $validated['activo'] = true;
+        $validated['estado_cuenta'] = 'pendiente';
+        $validated['creado_por'] = auth()->id();
+        $validated['primer_acceso_token'] = Str::random(80);
+        $validated['primer_acceso_expira_en'] = now()->addHours(self::FIRST_ACCESS_EXPIRATION_HOURS);
+
         $plainPassword = $validated['password'] ?? 'Galpon2026!';
         $validated['password'] = $plainPassword;
 
-        $user = User::create($validated);
+        $user = DB::transaction(function () use ($validated) {
+            $newUser = User::create($validated);
 
-        // Registrar actividad
-        LogActividad::registrar(
-            'crear_usuario',
-            auth()->id(),
-            'User',
-            $user->id,
-            null,
-            $user->toArray()
-        );
+            LogActividad::registrarAuditoria([
+                'accion' => 'crear_usuario',
+                'user_id' => auth()->id(),
+                'modulo' => 'usuarios',
+                'modelo' => 'User',
+                'modelo_id' => $newUser->id,
+                'referencia' => $newUser->email,
+                'datos_nuevos' => [
+                    'nombre' => $newUser->nombre,
+                    'email' => $newUser->email,
+                    'rol' => $newUser->rol,
+                    'activo' => $newUser->activo,
+                    'estado_cuenta' => $newUser->estado_cuenta,
+                    'creado_por' => $newUser->creado_por,
+                ],
+                'observacion' => 'Creacion de usuario',
+            ]);
 
-        // Enviar email de bienvenida
+            return $newUser;
+        });
+
         try {
             Mail::to($user->email)->send(new WelcomeUserMail(
                 $user->nombre,
                 $user->email,
                 $user->rol,
-                $plainPassword
+                $plainPassword,
+                $this->buildFirstAccessUrl($user->email, $user->primer_acceso_token),
+                optional($user->primer_acceso_expira_en)->format('Y-m-d H:i:s')
             ));
-        } catch (\Exception $e) {
-            // Log error pero no fallar la creación
+        } catch (\Throwable $e) {
             \Log::error('Error enviando email de bienvenida: ' . $e->getMessage());
         }
 
@@ -97,7 +115,7 @@ class UserController extends Controller
     }
 
     /**
-     * Mostrar un usuario específico
+     * Mostrar un usuario especifico
      */
     public function show(User $user): JsonResponse
     {
@@ -129,18 +147,104 @@ class UserController extends Controller
             $validated['email'] = strtolower($validated['email']);
         }
 
-        $datosAnteriores = $user->toArray();
-        $user->update($validated);
+        $authUser = $request->user();
+        $isSelfUpdate = $authUser && $authUser->id === $user->id;
 
-        // Registrar actividad
-        LogActividad::registrar(
-            'actualizar_usuario',
-            auth()->id(),
-            'User',
-            $user->id,
-            $datosAnteriores,
-            $user->fresh()->toArray()
-        );
+        if ($isSelfUpdate && array_key_exists('rol', $validated) && $user->rol === 'admin' && $validated['rol'] !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No puedes quitarte tu propio rol de administrador',
+            ], 422);
+        }
+
+        if ($isSelfUpdate && array_key_exists('activo', $validated) && $validated['activo'] === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No puedes desactivar tu propia cuenta',
+            ], 422);
+        }
+
+        $willDemoteAdmin = $user->rol === 'admin'
+            && array_key_exists('rol', $validated)
+            && $validated['rol'] !== 'admin';
+
+        $willDeactivateAdmin = $user->rol === 'admin'
+            && $user->activo
+            && array_key_exists('activo', $validated)
+            && $validated['activo'] === false;
+
+        if (($willDemoteAdmin || $willDeactivateAdmin) && $this->isLastActiveAdmin($user->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No puedes dejar el sistema sin administradores activos',
+            ], 422);
+        }
+
+        $datosAnteriores = [
+            'nombre' => $user->nombre,
+            'email' => $user->email,
+            'rol' => $user->rol,
+            'activo' => $user->activo,
+            'estado_cuenta' => $user->estado_cuenta,
+        ];
+
+        $rolAnterior = $user->rol;
+
+        if (array_key_exists('activo', $validated)) {
+            $validated['estado_cuenta'] = $validated['activo']
+                ? ($user->primer_acceso_completado_en ? 'activo' : 'pendiente')
+                : 'suspendido';
+        }
+
+        DB::transaction(function () use ($user, $validated, $datosAnteriores, $rolAnterior) {
+            $user->update($validated);
+
+            $datosNuevos = [
+                'nombre' => $user->nombre,
+                'email' => $user->email,
+                'rol' => $user->rol,
+                'activo' => $user->activo,
+                'estado_cuenta' => $user->estado_cuenta,
+            ];
+
+            LogActividad::registrarAuditoria([
+                'accion' => 'actualizar_usuario',
+                'user_id' => auth()->id(),
+                'modulo' => 'usuarios',
+                'modelo' => 'User',
+                'modelo_id' => $user->id,
+                'referencia' => $user->email,
+                'datos_anteriores' => $datosAnteriores,
+                'datos_nuevos' => $datosNuevos,
+                'observacion' => 'Actualizacion de datos de usuario',
+            ]);
+
+            if ($rolAnterior !== $user->rol) {
+                LogActividad::registrarAuditoria([
+                    'accion' => 'cambio_rol_usuario',
+                    'user_id' => auth()->id(),
+                    'modulo' => 'usuarios',
+                    'modelo' => 'User',
+                    'modelo_id' => $user->id,
+                    'referencia' => $user->email,
+                    'datos_anteriores' => ['rol' => $rolAnterior],
+                    'datos_nuevos' => ['rol' => $user->rol],
+                    'observacion' => 'Cambio de rol/permisos del usuario',
+                ]);
+            }
+
+            if (array_key_exists('password', $validated)) {
+                LogActividad::registrarAuditoria([
+                    'accion' => 'cambiar_password_usuario',
+                    'user_id' => auth()->id(),
+                    'modulo' => 'usuarios',
+                    'modelo' => 'User',
+                    'modelo_id' => $user->id,
+                    'referencia' => $user->email,
+                    'observacion' => 'Cambio de credenciales de usuario',
+                ]);
+            }
+        });
 
         return response()->json([
             'success' => true,
@@ -154,14 +258,6 @@ class UserController extends Controller
      */
     public function destroy(User $user): JsonResponse
     {
-        \Log::info("DESTROY llamado. User recibido:", [
-            'user_exists' => isset($user),
-            'user_id' => $user->id ?? 'NULL',
-            'user_nombre' => $user->nombre ?? 'NULL',
-            'request_route_params' => request()->route()->parameters(),
-        ]);
-
-        // No permitir eliminar al propio usuario
         if ($user->id === auth()->id()) {
             return response()->json([
                 'success' => false,
@@ -169,41 +265,43 @@ class UserController extends Controller
             ], 400);
         }
 
-        $datosAnteriores = $user->toArray();
-        $userName = $user->nombre;
+        if ($user->rol === 'admin' && $this->isLastAdmin($user->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No puedes eliminar el ultimo administrador del sistema',
+            ], 422);
+        }
+
+        $datosAnteriores = [
+            'nombre' => $user->nombre,
+            'email' => $user->email,
+            'rol' => $user->rol,
+            'activo' => $user->activo,
+            'estado_cuenta' => $user->estado_cuenta,
+        ];
+
         $userId = $user->id;
+        $userEmail = $user->email;
 
-        \Log::info("ANTES de delete - Usuario a eliminar:", [
-            'id' => $userId,
-            'nombre' => $userName,
-            'total_usuarios_antes' => User::count(),
-        ]);
+        DB::transaction(function () use ($user, $userId, $userEmail, $datosAnteriores) {
+            $user->delete();
 
-        $user->delete();
-
-        // Log para debug
-        $cantidadUsuarios = User::count();
-        \Log::info("DESPUÉS de delete:", [
-            'usuario_eliminado' => $userName,
-            'id_eliminado' => $userId,
-            'usuarios_antes' => $datosAnteriores ? count((array)$datosAnteriores) : 'N/A',
-            'usuarios_restantes' => $cantidadUsuarios,
-        ]);
-
-        // Registrar actividad
-        LogActividad::registrar(
-            'eliminar_usuario',
-            auth()->id(),
-            'User',
-            $userId,
-            $datosAnteriores,
-            null
-        );
+            LogActividad::registrarAuditoria([
+                'accion' => 'eliminar_usuario',
+                'user_id' => auth()->id(),
+                'modulo' => 'usuarios',
+                'modelo' => 'User',
+                'modelo_id' => $userId,
+                'referencia' => $userEmail,
+                'datos_anteriores' => $datosAnteriores,
+                'observacion' => 'Accion sensible: eliminacion de usuario',
+            ]);
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Usuario eliminado exitosamente',
-            'usuarios_restantes' => $cantidadUsuarios, // Para debug
+            'usuarios_restantes' => User::count(),
         ]);
     }
 
@@ -212,7 +310,6 @@ class UserController extends Controller
      */
     public function toggleActivo(User $user): JsonResponse
     {
-        // No permitir desactivar al propio usuario
         if ($user->id === auth()->id()) {
             return response()->json([
                 'success' => false,
@@ -220,25 +317,77 @@ class UserController extends Controller
             ], 400);
         }
 
-        $user->update(['activo' => !$user->activo]);
+        $nuevoEstadoActivo = !$user->activo;
 
-        // Si se desactiva, revocar todos los tokens
-        if (!$user->activo) {
-            $user->tokens()->delete();
+        if ($user->rol === 'admin' && $user->activo && !$nuevoEstadoActivo && $this->isLastActiveAdmin($user->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No puedes desactivar el ultimo administrador activo',
+            ], 422);
         }
 
-        // Registrar actividad
-        LogActividad::registrar(
-            $user->activo ? 'activar_usuario' : 'desactivar_usuario',
-            auth()->id(),
-            'User',
-            $user->id
-        );
+        $estadoCuenta = $nuevoEstadoActivo
+            ? ($user->primer_acceso_completado_en ? 'activo' : 'pendiente')
+            : 'suspendido';
+
+        DB::transaction(function () use ($user, $nuevoEstadoActivo, $estadoCuenta) {
+            $user->update([
+                'activo' => $nuevoEstadoActivo,
+                'estado_cuenta' => $estadoCuenta,
+            ]);
+
+            if (!$user->activo) {
+                $user->tokens()->delete();
+            }
+
+            LogActividad::registrarAuditoria([
+                'accion' => $user->activo ? 'activar_usuario' : 'desactivar_usuario',
+                'user_id' => auth()->id(),
+                'modulo' => 'usuarios',
+                'modelo' => 'User',
+                'modelo_id' => $user->id,
+                'referencia' => $user->email,
+                'datos_nuevos' => [
+                    'activo' => $user->activo,
+                    'estado_cuenta' => $user->estado_cuenta,
+                ],
+                'observacion' => $user->activo
+                    ? 'Reactivacion de cuenta'
+                    : 'Accion sensible: desactivacion de cuenta',
+            ]);
+        });
 
         return response()->json([
             'success' => true,
             'message' => $user->activo ? 'Usuario activado' : 'Usuario desactivado',
             'data' => $user,
         ]);
+    }
+
+    private function isLastAdmin(int $excludeUserId): bool
+    {
+        return User::where('rol', 'admin')
+            ->where('id', '!=', $excludeUserId)
+            ->count() === 0;
+    }
+
+    private function isLastActiveAdmin(int $excludeUserId): bool
+    {
+        return User::where('rol', 'admin')
+            ->where('activo', true)
+            ->where('id', '!=', $excludeUserId)
+            ->count() === 0;
+    }
+
+    private function buildFirstAccessUrl(string $email, ?string $token): string
+    {
+        $frontendUrl = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+
+        $params = http_build_query([
+            'email' => $email,
+            'first_access_token' => $token,
+        ]);
+
+        return "{$frontendUrl}/login?{$params}";
     }
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { MapPin, CheckCircle2, ArrowRight, Mail, Lock, Loader2, KeyRound, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,6 +12,14 @@ const LoginPage = () => {
 
   const { login, verifyLoginCode, resetLoginFlow, pendingEmail, isLoading } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const emailFromLink = searchParams.get('email');
+    if (emailFromLink) {
+      setEmail(emailFromLink);
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

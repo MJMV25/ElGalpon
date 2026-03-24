@@ -1,9 +1,25 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import reportesService, { DashboardData, ProductoPorCategoria, StockAlertaResponse } from '@/services/reportesService';
 import { formatCurrencyFull, formatNumber, getCategoryEmoji } from '@/utils/formatters';
-import { Package, DollarSign, AlertTriangle, Truck, Plus, FileDown, ArrowUpRight, ArrowDownRight, Minus, Clock } from 'lucide-react';
+import {
+  Package,
+  DollarSign,
+  AlertTriangle,
+  Truck,
+  Plus,
+  FileDown,
+  ArrowRight,
+  Clock,
+  Boxes,
+  ArrowUpRight,
+  ArrowDownRight,
+  Crown,
+  BarChart3,
+  TriangleAlert,
+  ArrowLeftRight,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 const DashboardPage = () => {
@@ -38,7 +54,7 @@ const DashboardPage = () => {
       if (dashboardRes.success) setDashboard(dashboardRes.data);
       if (categoriasRes.success) setCategorias(categoriasRes.data || []);
       if (stockRes.success) setStockAlerta(stockRes.data);
-    } catch (error) {
+    } catch {
       toast.error('No se pudo cargar el resumen del dashboard');
     } finally {
       setLoading(false);
@@ -59,7 +75,7 @@ const DashboardPage = () => {
         fecha_hasta: end,
       });
       if (response.success) {
-        setActividad(response.data.movimientos.slice(0, 10));
+        setActividad(response.data.movimientos.slice(0, 8));
       }
     } catch {
       setActividad([]);
@@ -81,14 +97,30 @@ const DashboardPage = () => {
     const proveedores = dashboard?.proveedores.total ?? 0;
 
     return [
-      { label: 'Total Productos', value: formatNumber(totalProductos), icon: Package, color: 'bg-info', trend: 'Productos activos', trendUp: null },
-      { label: 'Valor del Inventario', value: formatCurrencyFull(valorInventario), icon: DollarSign, color: 'bg-success', trend: 'Valor de compra', trendUp: null },
-      { label: 'Productos Bajo Stock', value: formatNumber(stockBajo), icon: AlertTriangle, color: 'bg-warning', trend: 'Requiere atención', trendUp: false },
-      { label: 'Proveedores Activos', value: formatNumber(proveedores), icon: Truck, color: 'bg-cat-accesorios', trend: 'Relaciones activas', trendUp: null },
+      { label: 'Total productos', value: formatNumber(totalProductos), icon: Package, color: 'bg-info', helper: 'Catalogo activo' },
+      { label: 'Valor inventario', value: formatCurrencyFull(valorInventario), icon: DollarSign, color: 'bg-success', helper: 'Costo acumulado' },
+      { label: 'Bajo stock', value: formatNumber(stockBajo), icon: AlertTriangle, color: 'bg-warning', helper: 'Items por revisar' },
+      { label: 'Proveedores', value: formatNumber(proveedores), icon: Truck, color: 'bg-cat-accesorios', helper: 'Activos y vinculados' },
     ];
   }, [dashboard]);
 
-  const totalValor = categorias.reduce((sum, c) => sum + (c.valor_inventario || 0), 0);
+  const resumenHoy = useMemo(() => {
+    const mov = dashboard?.movimientos_hoy;
+    const cot = dashboard?.cotizaciones;
+    return {
+      totalMovimientos: mov?.total ?? 0,
+      entradas: mov?.entradas ?? 0,
+      salidas: mov?.salidas ?? 0,
+      cotizacionesActivas: cot?.activas ?? 0,
+      cotizacionesPendientes: cot?.pendientes_respuesta ?? 0,
+    };
+  }, [dashboard]);
+
+  const topCategorias = useMemo(() => {
+    return [...categorias]
+      .sort((a, b) => (b.valor_inventario || 0) - (a.valor_inventario || 0))
+      .slice(0, 4);
+  }, [categorias]);
 
   const alertas = useMemo(() => {
     if (!stockAlerta) return [];
@@ -104,175 +136,213 @@ const DashboardPage = () => {
       minimo: p.stock_minimo,
       status: 'bajo' as const,
     }));
-    return [...criticos, ...bajos].slice(0, 5);
+    return [...criticos, ...bajos].slice(0, 4);
   }, [stockAlerta]);
+
+  const quickActions = [
+    { label: 'Productos', desc: 'Gestion del catalogo', icon: Boxes, to: '/productos' },
+    { label: 'Entradas y Salidas', desc: 'Movimientos de inventario', icon: ArrowLeftRight, to: '/movimientos-inventario' },
+    { label: 'Stock Bajo', desc: 'Alertas de reposicion', icon: TriangleAlert, to: '/stock-bajo' },
+    { label: 'Reportes', desc: 'Analisis y exportes', icon: BarChart3, to: '/reportes' },
+    { label: 'Panel del Dueno', desc: 'Vista ejecutiva avanzada', icon: Crown, to: '/panel-dueno', adminOnly: true },
+  ] as const;
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Welcome */}
-      <div className="bg-gradient-to-r from-primary to-sidebar rounded-xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md">
-        <div className="flex-1">
-          <h1 className="text-lg sm:text-xl font-bold text-primary-foreground">
-            ¡Bienvenido, {user?.nombre.split(' ')[0]}!
-          </h1>
-          <p className="text-primary-foreground/80 text-xs sm:text-sm mt-1">
-            Aquí tienes el resumen de tu inventario para hoy
-          </p>
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          {user?.rol === 'admin' && (
+      <section className="bg-gradient-to-r from-primary to-sidebar rounded-xl p-4 sm:p-6 shadow-md">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-primary-foreground">
+              Resumen general, {user?.nombre.split(' ')[0]}
+            </h1>
+            <p className="text-primary-foreground/80 text-xs sm:text-sm mt-1">
+              Vista rapida del estado operativo para navegar a los modulos clave.
+            </p>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            {user?.rol === 'admin' && (
+              <button
+                onClick={() => navigate('/productos/nuevo')}
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg bg-card text-foreground text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 hover:opacity-90"
+              >
+                <Plus className="w-4 h-4" /> Nuevo producto
+              </button>
+            )}
             <button
-              onClick={() => navigate('/productos/nuevo')}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg bg-card text-foreground text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+              onClick={() => navigate('/reportes')}
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg bg-sidebar text-sidebar-primary-foreground text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 hover:opacity-90"
             >
-              <Plus className="w-4 h-4" />
-              <span className="hidden xs:inline">Nuevo</span>
+              <FileDown className="w-4 h-4" /> Reportes
             </button>
-          )}
-          <button
-            onClick={() => navigate('/reportes')}
-            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg bg-sidebar text-sidebar-primary-foreground text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
-          >
-            <FileDown className="w-4 h-4" />
-            <span className="hidden xs:inline">Reporte</span>
-          </button>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <section className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map(s => (
-          <div key={s.label} className="bg-card rounded-xl p-4 sm:p-5 border border-border hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">{s.label}</p>
-                <p className="text-xl sm:text-2xl font-bold text-foreground mt-1">{s.value}</p>
+          <article key={s.label} className="bg-card rounded-xl p-4 sm:p-5 border border-border">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground">{s.label}</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground mt-1">{loading ? '...' : s.value}</p>
+                <p className="text-xs text-muted-foreground mt-2">{s.helper}</p>
               </div>
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${s.color} flex items-center justify-center shrink-0 ml-2`}>
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${s.color} flex items-center justify-center shrink-0`}>
                 <s.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
             </div>
-            <p className={`text-xs mt-2 sm:mt-3 flex items-center gap-1 ${s.trendUp === true ? 'text-success' : s.trendUp === false ? 'text-destructive' : 'text-muted-foreground'}`}>
-              {s.trendUp === true ? <ArrowUpRight className="w-3 h-3" /> : s.trendUp === false ? <ArrowDownRight className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-              <span className="truncate">{s.trend}</span>
+          </article>
+        ))}
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <article className="bg-card rounded-xl p-4 sm:p-5 border border-border lg:col-span-2">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="font-semibold text-sm sm:text-base text-foreground">Operacion de hoy</h2>
+            <button onClick={() => navigate('/movimientos-inventario')} className="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+              Ver movimientos <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-lg bg-muted p-3">
+              <p className="text-xs text-muted-foreground">Movimientos</p>
+              <p className="text-lg font-semibold text-foreground mt-1">{formatNumber(resumenHoy.totalMovimientos)}</p>
+            </div>
+            <div className="rounded-lg bg-success/10 p-3">
+              <p className="text-xs text-success">Entradas</p>
+              <p className="text-lg font-semibold text-success mt-1 flex items-center gap-1"><ArrowUpRight className="w-4 h-4" /> {formatNumber(resumenHoy.entradas)}</p>
+            </div>
+            <div className="rounded-lg bg-destructive/10 p-3">
+              <p className="text-xs text-destructive">Salidas</p>
+              <p className="text-lg font-semibold text-destructive mt-1 flex items-center gap-1"><ArrowDownRight className="w-4 h-4" /> {formatNumber(resumenHoy.salidas)}</p>
+            </div>
+          </div>
+          <div className="mt-3 rounded-lg border border-border p-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground">
+              Cotizaciones activas: <span className="font-semibold text-foreground">{formatNumber(resumenHoy.cotizacionesActivas)}</span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Pendientes: <span className="font-semibold text-foreground">{formatNumber(resumenHoy.cotizacionesPendientes)}</span>
             </p>
           </div>
-        ))}
-      </div>
+        </article>
 
-      {/* Category + Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Category distribution */}
-        <div className="bg-card rounded-xl p-4 sm:p-5 border border-border">
-          <h3 className="font-semibold text-sm sm:text-base text-foreground mb-4 flex items-center gap-2">
-            <span>📊</span> Distribución por Categoría
-          </h3>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Cargando categorías...</p>
-          ) : categorias.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No hay categorías para mostrar.</p>
-          ) : (
-            <div className="space-y-3 sm:space-y-4">
-              {categorias.map(cat => {
-                const pct = totalValor > 0 ? Math.round((cat.valor_inventario / totalValor) * 100) : 0;
-                return (
-                  <div key={cat.id}>
-                    <div className="flex items-center justify-between text-xs sm:text-sm mb-1.5">
-                      <span className="text-foreground truncate flex items-center gap-1.5">
-                        <span>{getCategoryEmoji(cat.nombre.toLowerCase(), null)}</span>
-                        <span className="truncate">{cat.nombre}</span>
-                      </span>
-                      <span className="text-muted-foreground whitespace-nowrap ml-2">
-                        {formatCurrencyFull(cat.valor_inventario)} ({pct}%)
-                      </span>
+        <article className="bg-card rounded-xl p-4 sm:p-5 border border-border">
+          <h2 className="font-semibold text-sm sm:text-base text-foreground mb-3">Accesos rapidos</h2>
+          <div className="space-y-2">
+            {quickActions
+              .filter(item => !item.adminOnly || user?.rol === 'admin')
+              .map(item => (
+                <button
+                  key={item.to}
+                  onClick={() => navigate(item.to)}
+                  className="w-full text-left rounded-lg border border-border p-3 hover:bg-muted transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <item.icon className="w-4 h-4 text-primary shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm text-foreground font-medium truncate">{item.label}</p>
+                        <p className="text-xs text-muted-foreground truncate">{item.desc}</p>
+                      </div>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{ width: `${pct}%`, backgroundColor: cat.color || 'var(--primary)' }}
-                      />
-                    </div>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                </button>
+              ))}
+          </div>
+        </article>
+      </section>
 
-        {/* Stock alerts */}
-        <div className="bg-card rounded-xl p-4 sm:p-5 border border-border">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm sm:text-base text-foreground flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" /> Alertas de Stock
-            </h3>
-            <button
-              className="text-xs sm:text-sm text-primary font-medium hover:underline"
-              onClick={() => navigate('/stock-bajo')}
-            >
-              Ver todas
-            </button>
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <article className="bg-card rounded-xl p-4 sm:p-5 border border-border">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-sm sm:text-base text-foreground">Prioridades de stock</h2>
+            <button onClick={() => navigate('/stock-bajo')} className="text-xs text-primary font-medium hover:underline">Ver todas</button>
           </div>
           {alertas.length === 0 ? (
             <p className="text-sm text-muted-foreground">Sin alertas en este momento.</p>
           ) : (
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-2">
               {alertas.map(a => (
-                <div key={`${a.producto}-${a.stock}`} className={`p-3 rounded-lg transition-all ${a.status === 'critico' ? 'bg-destructive/10 border border-destructive/20' : 'bg-warning/10 border border-warning/20'}`}>
-                  <div className="flex items-start sm:items-center justify-between gap-2 flex-col sm:flex-row">
-                    <div className="flex-1 min-w-0">
+                <div key={`${a.producto}-${a.stock}`} className={`p-3 rounded-lg border ${a.status === 'critico' ? 'bg-destructive/10 border-destructive/20' : 'bg-warning/10 border-warning/20'}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{a.producto}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Stock: <span className="font-medium">{a.stock}</span> • Mínimo: {a.minimo}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Stock: {a.stock} | Minimo: {a.minimo}</p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${a.status === 'critico' ? 'bg-destructive text-destructive-foreground' : 'bg-warning text-warning-foreground'}`}>
-                      {a.status === 'critico' ? 'Crítico' : 'Bajo'}
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${a.status === 'critico' ? 'bg-destructive text-destructive-foreground' : 'bg-warning text-warning-foreground'}`}>
+                      {a.status === 'critico' ? 'Critico' : 'Bajo'}
                     </span>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
-      </div>
+        </article>
 
-      {/* Activity */}
-      <div className="bg-card rounded-xl p-4 sm:p-5 border border-border">
+        <article className="bg-card rounded-xl p-4 sm:p-5 border border-border">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-sm sm:text-base text-foreground">Categorias con mayor valor</h2>
+            <button onClick={() => navigate('/categorias')} className="text-xs text-primary font-medium hover:underline">Ver categorias</button>
+          </div>
+          {topCategorias.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No hay categorias para mostrar.</p>
+          ) : (
+            <div className="space-y-2">
+              {topCategorias.map(cat => (
+                <div key={cat.id} className="rounded-lg border border-border p-3 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-foreground font-medium truncate flex items-center gap-1.5">
+                      <span>{getCategoryEmoji(cat.nombre.toLowerCase(), null)}</span>
+                      <span>{cat.nombre}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatNumber(cat.total_productos)} productos</p>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground shrink-0">{formatCurrencyFull(cat.valor_inventario)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+      </section>
+
+      <section className="bg-card rounded-xl p-4 sm:p-5 border border-border">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-          <h3 className="font-semibold text-sm sm:text-base text-foreground flex items-center gap-2">
-            <Clock className="w-4 h-4" /> Actividad Reciente
-          </h3>
+          <h2 className="font-semibold text-sm sm:text-base text-foreground flex items-center gap-2">
+            <Clock className="w-4 h-4" /> Actividad reciente
+          </h2>
           <div className="flex gap-1 w-full sm:w-auto">
             {(['hoy', 'semana', 'mes'] as const).map(f => (
               <button
                 key={f}
                 onClick={() => setActFilter(f)}
-                className={`flex-1 sm:flex-none px-3 py-1.5 sm:py-1 rounded-md text-xs font-medium transition-colors ${actFilter === f ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium ${actFilter === f ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 {f === 'hoy' ? 'Hoy' : f === 'semana' ? 'Semana' : 'Mes'}
               </button>
             ))}
           </div>
         </div>
+
         {actividad.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay movimientos recientes.</p>
         ) : (
-          <div className="space-y-2 sm:space-y-3">
+          <div className="space-y-2">
             {actividad.map((a) => (
-              <div key={a.id} className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm">
-                <span className="text-muted-foreground w-14 sm:w-16 text-right shrink-0">
+              <div key={a.id} className="flex items-center gap-3 text-xs sm:text-sm border-b border-border/70 pb-2 last:border-b-0">
+                <span className="text-muted-foreground w-14 text-right shrink-0">
                   {new Date(a.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 <div className={`w-2 h-2 rounded-full shrink-0 ${a.tipo === 'entrada' ? 'bg-success' : a.tipo === 'salida' ? 'bg-destructive' : 'bg-info'}`} />
-                <p className="text-foreground min-w-0 flex-1">
-                  <span className="font-medium">{a.user?.nombre || 'Sistema'}</span> registró {a.tipo}{' '}
-                  <span className="font-medium truncate inline-block max-w-[150px] sm:max-w-none">{a.producto?.nombre || 'Producto'}</span>
+                <p className="text-foreground min-w-0 flex-1 truncate">
+                  <span className="font-medium">{a.user?.nombre || 'Sistema'}</span> registr� <span className="font-medium">{a.tipo}</span> de {a.producto?.nombre || 'Producto'}
                 </p>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 };

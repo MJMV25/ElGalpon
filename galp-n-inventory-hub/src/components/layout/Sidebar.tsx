@@ -6,7 +6,7 @@ import reportesService from '@/services/reportesService';
 import {
   LayoutDashboard, Package, PlusCircle, Tags, AlertTriangle,
   Wallet, BarChart3, Truck, FileText, Users, Settings, LogOut,
-  ArrowLeftRight,
+  ArrowLeftRight, Crown, Shield,
   X, MoreVertical
 } from 'lucide-react';
 
@@ -98,6 +98,8 @@ const Sidebar = ({ open, onClose }: SidebarProps) => {
       label: 'PRINCIPAL',
       items: [
         { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+        ...(isAdmin ? [{ to: '/panel-dueno', icon: Crown, label: 'Panel del Dueno' }] : []),
+        ...(isAdmin ? [{ to: '/auditoria', icon: Shield, label: 'Auditoria' }] : []),
       ]
     },
     {

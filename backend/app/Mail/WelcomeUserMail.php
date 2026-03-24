@@ -16,16 +16,27 @@ class WelcomeUserMail extends Mailable
     public string $email;
     public string $rol;
     public string $passwordTemporal;
+    public string $primerAccesoUrl;
+    public string $expiraEn;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(string $nombreUsuario, string $email, string $rol, string $passwordTemporal)
+    public function __construct(
+        string $nombreUsuario,
+        string $email,
+        string $rol,
+        string $passwordTemporal,
+        ?string $primerAccesoUrl = null,
+        ?string $expiraEn = null
+    )
     {
         $this->nombreUsuario = $nombreUsuario;
         $this->email = $email;
         $this->rol = $rol;
         $this->passwordTemporal = $passwordTemporal;
+        $this->primerAccesoUrl = $primerAccesoUrl ?? url('/login');
+        $this->expiraEn = $expiraEn ?? now()->addHours(48)->format('Y-m-d H:i:s');
     }
 
     /**

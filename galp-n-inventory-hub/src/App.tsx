@@ -15,6 +15,8 @@ import CategoriesPage from "@/pages/CategoriesPage";
 import LowStockPage from "@/pages/LowStockPage";
 import BudgetPage from "@/pages/BudgetPage";
 import ReportsPage from "@/pages/ReportsPage";
+import OwnerPanelPage from "@/pages/OwnerPanelPage";
+import AuditoriaPage from "@/pages/AuditoriaPage";
 import SuppliersPage from "@/pages/SuppliersPage";
 import QuotationsPage from "@/pages/QuotationsPage";
 import NewQuotationPage from "@/pages/NewQuotationPage";
@@ -91,6 +93,8 @@ const AppContent = () => {
         <Route path="stock-bajo" element={<LowStockPage />} />
         <Route path="presupuesto" element={<BudgetPage />} />
         <Route path="reportes" element={<ReportsPage />} />
+        <Route path="panel-dueno" element={<AdminRoute><OwnerPanelPage /></AdminRoute>} />
+        <Route path="auditoria" element={<AdminRoute><AuditoriaPage /></AdminRoute>} />
         <Route path="proveedores" element={<SuppliersPage />} />
         <Route path="cotizaciones" element={<QuotationsPage />} />
         <Route path="cotizaciones/nueva" element={<AdminRoute><NewQuotationPage /></AdminRoute>} />

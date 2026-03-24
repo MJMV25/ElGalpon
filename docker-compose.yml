@@ -50,6 +50,7 @@ services:
       MAIL_PASSWORD: mzsyyvzuqhpyxost
       MAIL_ENCRYPTION: tls
       MAIL_FROM_ADDRESS: samugj22@gmail.com
+      AUTH_EXPOSE_OTP: "true"
       MAIL_FROM_NAME: "El GalpÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n"
     ports:
       - "8000:8000"

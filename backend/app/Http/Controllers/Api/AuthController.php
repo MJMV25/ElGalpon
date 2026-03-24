@@ -29,6 +29,9 @@ class AuthController extends Controller
 
         $email = strtolower($request->email);
         $password = $request->password;
+        $mostrarCodigoEnRespuesta = (bool) env('AUTH_EXPOSE_OTP', false)
+            || app()->environment('local')
+            || config('app.debug');
 
         $key = 'password-login-attempt:' . $email;
         if (RateLimiter::tooManyAttempts($key, 5)) {
@@ -41,7 +44,10 @@ class AuthController extends Controller
 
         RateLimiter::hit($key, 60);
 
-        $user = User::where('email', $email)->first();
+        $user = User::query()
+            ->select(['id', 'nombre', 'email', 'password', 'rol', 'activo', 'estado_cuenta'])
+            ->where('email', $email)
+            ->first();
 
         if (!$user || !$user->password || !Hash::check($password, $user->password)) {
             return response()->json([
@@ -50,7 +56,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if (!$user->activo) {
+        if (!$user->activo || $user->estado_cuenta === 'suspendido') {
             return response()->json([
                 'success' => false,
                 'message' => 'Tu cuenta esta desactivada. Contacta al administrador.',
@@ -75,26 +81,36 @@ class AuthController extends Controller
             'email' => $email,
         ], now()->addMinutes(10));
 
-        try {
-            Mail::to($email)->queue(new VerificationCodeMail($codigo, $user->nombre));
-        } catch (\Throwable $e) {
-            Cache::forget('login-challenge:' . $challengeToken);
-            \Log::warning('Error al enviar email: ' . $e->getMessage());
+        if (!$mostrarCodigoEnRespuesta) {
+            try {
+                dispatch(function () use ($email, $codigo, $user) {
+                    Mail::to($email)->send(new VerificationCodeMail($codigo, $user->nombre));
+                })->afterResponse();
+            } catch (\Throwable $e) {
+                Cache::forget('login-challenge:' . $challengeToken);
+                \Log::warning('Error al enviar email: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al enviar el correo. Intenta de nuevo.',
-            ], 500);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al enviar el correo. Intenta de nuevo.',
+                ], 500);
+            }
         }
 
         RateLimiter::clear($key);
 
+        $mensaje = 'Codigo enviado al correo. Verifica para completar el acceso.';
+        if ($mostrarCodigoEnRespuesta) {
+            $mensaje = 'Codigo generado correctamente. Verifica para completar el acceso.';
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'Codigo enviado al correo. Verifica para completar el acceso.',
+            'message' => $mensaje,
             'data' => [
                 'challenge_token' => $challengeToken,
                 'email' => $email,
+                'otp_preview' => $mostrarCodigoEnRespuesta ? $codigo : null,
             ],
         ]);
     }
@@ -143,7 +159,20 @@ class AuthController extends Controller
         }
 
         $email = $challenge['email'];
-        $user = User::find($challenge['user_id']);
+        $user = User::query()
+            ->select([
+                'id',
+                'nombre',
+                'email',
+                'rol',
+                'activo',
+                'estado_cuenta',
+                'ultimo_acceso',
+                'created_at',
+                'updated_at',
+                'primer_acceso_completado_en',
+            ])
+            ->find($challenge['user_id']);
 
         if (!$user || !$user->activo || strtolower($user->email) !== strtolower($email)) {
             Cache::forget('login-challenge:' . $challengeToken);
@@ -166,10 +195,31 @@ class AuthController extends Controller
         Cache::forget('login-challenge:' . $challengeToken);
         RateLimiter::clear($verifyKey);
 
+        $user->update([
+            'ultimo_acceso' => now(),
+            'ip_ultimo_acceso' => $request->ip(),
+            'estado_cuenta' => $user->activo ? 'activo' : 'suspendido',
+            'primer_acceso_completado_en' => $user->primer_acceso_completado_en ?? now(),
+            'primer_acceso_token' => null,
+            'primer_acceso_expira_en' => null,
+        ]);
+
         $user->tokens()->delete();
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        LogActividad::registrar('login', $user->id);
+        LogActividad::registrarAuditoria([
+            'accion' => 'login',
+            'user_id' => $user->id,
+            'modulo' => 'seguridad',
+            'modelo' => 'User',
+            'modelo_id' => $user->id,
+            'referencia' => $user->email,
+            'datos_nuevos' => [
+                'ultimo_acceso' => optional($user->ultimo_acceso)->toDateTimeString(),
+                'ip_ultimo_acceso' => $user->ip_ultimo_acceso,
+            ],
+            'observacion' => 'Inicio de sesion exitoso',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -224,7 +274,16 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        LogActividad::registrar('logout', $user->id);
+        LogActividad::registrarAuditoria([
+            'accion' => 'logout',
+            'user_id' => $user->id,
+            'modulo' => 'seguridad',
+            'modelo' => 'User',
+            'modelo_id' => $user->id,
+            'referencia' => $user->email,
+            'observacion' => 'Cierre de sesion',
+        ]);
+
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
@@ -240,7 +299,16 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        LogActividad::registrar('logout_all', $user->id);
+        LogActividad::registrarAuditoria([
+            'accion' => 'logout_all',
+            'user_id' => $user->id,
+            'modulo' => 'seguridad',
+            'modelo' => 'User',
+            'modelo_id' => $user->id,
+            'referencia' => $user->email,
+            'observacion' => 'Accion sensible: cierre de todas las sesiones',
+        ]);
+
         $request->user()->tokens()->delete();
 
         return response()->json([

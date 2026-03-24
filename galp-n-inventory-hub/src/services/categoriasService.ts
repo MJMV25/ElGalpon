@@ -9,6 +9,9 @@ export interface Categoria {
   color: string | null;
   activo: boolean;
   productos_count?: number;
+  total_productos?: number;
+  total_stock?: number;
+  valor_inventario?: number;
   subcategorias?: Subcategoria[];
   created_at: string;
   updated_at: string;
@@ -28,8 +31,8 @@ export interface Subcategoria {
 
 const categoriasService = {
   // Obtener todas las categorías
-  getAll: async (): Promise<ApiResponse<Categoria[]>> => {
-    const response = await api.get('/categorias');
+  getAll: async (params?: { include_metrics?: boolean; include_inactive?: boolean; activo?: boolean }): Promise<ApiResponse<Categoria[]>> => {
+    const response = await api.get('/categorias', { params });
     return response.data;
   },
 

@@ -107,13 +107,19 @@ class CotizacionController extends Controller
             return $cotizacion;
         });
 
-        // Registrar actividad
-        LogActividad::registrar(
-            'crear_cotizacion',
-            auth()->id(),
-            'Cotizacion',
-            $cotizacion->id
-        );
+        LogActividad::registrarAuditoria([
+            'accion' => 'crear_cotizacion',
+            'user_id' => auth()->id(),
+            'modulo' => 'compras',
+            'modelo' => 'Cotizacion',
+            'modelo_id' => $cotizacion->id,
+            'referencia' => $cotizacion->numero,
+            'datos_nuevos' => [
+                'titulo' => $cotizacion->titulo,
+                'fecha_limite' => $cotizacion->fecha_limite,
+            ],
+            'observacion' => 'Creacion de cotizacion',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -252,7 +258,19 @@ class CotizacionController extends Controller
             'fecha_limite' => 'sometimes|required|date|after_or_equal:fecha',
         ]);
 
+        $datosAnteriores = $cotizacion->toArray();
         $cotizacion->update($validated);
+
+        LogActividad::registrarAuditoria([
+            'accion' => 'actualizar_cotizacion',
+            'user_id' => auth()->id(),
+            'modulo' => 'compras',
+            'modelo' => 'Cotizacion',
+            'modelo_id' => $cotizacion->id,
+            'referencia' => $cotizacion->numero,
+            'datos_anteriores' => $datosAnteriores,
+            'datos_nuevos' => $cotizacion->fresh()->toArray(),
+        ]);
 
         return response()->json([
             'success' => true,
@@ -319,14 +337,16 @@ class CotizacionController extends Controller
         $cotizacion->update(['estado' => 'enviada']);
 
         // Registrar actividad
-        LogActividad::registrar(
-            'enviar_cotizacion',
-            auth()->id(),
-            'Cotizacion',
-            $cotizacion->id,
-            null,
-            ['proveedores_enviados' => $enviados, 'errores' => $errores]
-        );
+        LogActividad::registrarAuditoria([
+            'accion' => 'enviar_cotizacion',
+            'user_id' => auth()->id(),
+            'modulo' => 'compras',
+            'modelo' => 'Cotizacion',
+            'modelo_id' => $cotizacion->id,
+            'referencia' => $cotizacion->numero,
+            'datos_nuevos' => ['proveedores_enviados' => $enviados, 'errores' => $errores],
+            'observacion' => "Cotizacion enviada a {$enviados} proveedor(es)",
+        ]);
 
         $mensaje = "Cotización enviada a {$enviados} proveedor(es)";
         if (count($errores) > 0) {
@@ -406,6 +426,21 @@ class CotizacionController extends Controller
                 ],
             ]);
         }
+
+        LogActividad::registrarAuditoria([
+            'accion' => 'registrar_respuesta_cotizacion',
+            'user_id' => auth()->id(),
+            'modulo' => 'compras',
+            'modelo' => 'Cotizacion',
+            'modelo_id' => $cotizacion->id,
+            'referencia' => $cotizacion->numero,
+            'datos_nuevos' => [
+                'cotizacion_proveedor_id' => $cotizacionProveedor->id,
+                'proveedor_id' => $proveedor->id,
+                'total_respuestas' => count($validated['respuestas']),
+            ],
+            'observacion' => $validated['notas_generales'] ?? null,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -510,12 +545,15 @@ class CotizacionController extends Controller
 
         $cotizacion->update(['estado' => 'completada']);
 
-        LogActividad::registrar(
-            'completar_cotizacion',
-            auth()->id(),
-            'Cotizacion',
-            $cotizacion->id
-        );
+        LogActividad::registrarAuditoria([
+            'accion' => 'completar_cotizacion',
+            'user_id' => auth()->id(),
+            'modulo' => 'compras',
+            'modelo' => 'Cotizacion',
+            'modelo_id' => $cotizacion->id,
+            'referencia' => $cotizacion->numero,
+            'observacion' => 'Accion sensible de cierre de cotizacion',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -538,12 +576,15 @@ class CotizacionController extends Controller
 
         $cotizacion->update(['estado' => 'cancelada']);
 
-        LogActividad::registrar(
-            'cancelar_cotizacion',
-            auth()->id(),
-            'Cotizacion',
-            $cotizacion->id
-        );
+        LogActividad::registrarAuditoria([
+            'accion' => 'cancelar_cotizacion',
+            'user_id' => auth()->id(),
+            'modulo' => 'compras',
+            'modelo' => 'Cotizacion',
+            'modelo_id' => $cotizacion->id,
+            'referencia' => $cotizacion->numero,
+            'observacion' => 'Accion sensible de anulacion',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -564,14 +605,19 @@ class CotizacionController extends Controller
             ], 400);
         }
 
+        $datosAnteriores = $cotizacion->toArray();
         $cotizacion->delete();
 
-        LogActividad::registrar(
-            'eliminar_cotizacion',
-            auth()->id(),
-            'Cotizacion',
-            $cotizacion->id
-        );
+        LogActividad::registrarAuditoria([
+            'accion' => 'eliminar_cotizacion',
+            'user_id' => auth()->id(),
+            'modulo' => 'compras',
+            'modelo' => 'Cotizacion',
+            'modelo_id' => $cotizacion->id,
+            'referencia' => $cotizacion->numero,
+            'datos_anteriores' => $datosAnteriores,
+            'observacion' => 'Accion sensible de eliminacion',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -579,4 +625,3 @@ class CotizacionController extends Controller
         ]);
     }
 }
-

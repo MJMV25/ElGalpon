@@ -32,10 +32,9 @@ const Header = ({ title, onMenuClick }: HeaderProps) => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notificacion[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const notificationsRef = useRef<HTMLDivElement | null>(null);
-
-  const unreadCount = notifications.filter(n => !n.leida).length;
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -55,18 +54,29 @@ const Header = ({ title, onMenuClick }: HeaderProps) => {
   }, [notificationsOpen]);
 
   useEffect(() => {
-    loadNotifications();
+    loadUnreadCount();
   }, []);
 
   const loadNotifications = async () => {
     setLoadingNotifications(true);
     try {
-      const response = await notificacionesService.getAll();
-      setNotifications(asNotificationList(response.data));
+      const response = await notificacionesService.getAll({ per_page: 12 });
+      const items = asNotificationList(response.data);
+      setNotifications(items);
+      setUnreadCount(items.filter(n => !n.leida).length);
     } catch {
       setNotifications([]);
     } finally {
       setLoadingNotifications(false);
+    }
+  };
+
+  const loadUnreadCount = async () => {
+    try {
+      const response = await notificacionesService.contarNoLeidas();
+      setUnreadCount(response.data?.no_leidas || 0);
+    } catch {
+      setUnreadCount(0);
     }
   };
 
@@ -88,6 +98,7 @@ const Header = ({ title, onMenuClick }: HeaderProps) => {
     try {
       await notificacionesService.marcarLeida(id);
       setNotifications(prev => prev.map(n => (n.id === id ? { ...n, leida: true } : n)));
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch {
       toast.error('No se pudo marcar la notificacion');
     }
@@ -97,6 +108,7 @@ const Header = ({ title, onMenuClick }: HeaderProps) => {
     try {
       await notificacionesService.marcarTodasLeidas();
       setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
+      setUnreadCount(0);
       toast.success('Todas las notificaciones fueron marcadas como leidas');
     } catch {
       toast.error('No se pudieron marcar las notificaciones');
@@ -147,8 +159,11 @@ const Header = ({ title, onMenuClick }: HeaderProps) => {
           <button
             className="relative hover:text-foreground"
             onClick={() => {
-              setNotificationsOpen(prev => !prev);
-              if (!notificationsOpen) loadNotifications();
+              const nextOpen = !notificationsOpen;
+              setNotificationsOpen(nextOpen);
+              if (nextOpen) {
+                loadNotifications();
+              }
             }}
             title="Notificaciones"
           >

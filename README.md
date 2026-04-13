@@ -18,7 +18,7 @@ copy .env.docker.example .env
 notepad .env  # Agregar credenciales de email
 
 # 3. Iniciar con Docker
-docker-compose up -d
+docker-compose up -d --build
 ```
 
 **📖 Guía completa**: Lee [INSTALACION_COMPAÑEROS.md](INSTALACION_COMPAÑEROS.md) para instrucciones detalladas.
@@ -133,7 +133,7 @@ ElGalpon/
 
 ```bash
 # Iniciar servicios
-docker-compose up -d
+docker-compose up -d --build
 
 # Ver logs
 docker-compose logs -f

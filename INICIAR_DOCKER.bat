@@ -17,10 +17,10 @@ if %ERRORLEVEL% NEQ 0 (
     set DOCKER_CMD="%DOCKER_PATH%\docker-compose.exe"
 )
 
-echo Iniciando contenedores Docker...
+echo Reconstruyendo imagenes e iniciando contenedores Docker...
 echo.
 
-%DOCKER_CMD% up -d
+%DOCKER_CMD% up -d --build
 
 if %ERRORLEVEL% EQU 0 (
     echo.

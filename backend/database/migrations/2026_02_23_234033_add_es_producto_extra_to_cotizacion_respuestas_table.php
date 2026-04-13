@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -13,12 +14,25 @@ return new class extends Migration
     {
         Schema::table('cotizacion_respuestas', function (Blueprint $table) {
             // Campo para indicar si es un producto extra agregado por el proveedor
-            $table->boolean('es_producto_extra')->default(false)->after('notas');
+            $table->boolean('es_producto_extra')->default(false);
             // Campo para el nombre del producto extra (cuando no es de la lista original)
-            $table->string('nombre_producto_extra')->nullable()->after('es_producto_extra');
-            // Hacer que cotizacion_producto_id sea nullable para productos extra
-            $table->foreignId('cotizacion_producto_id')->nullable()->change();
+            $table->string('nombre_producto_extra')->nullable();
         });
+
+        // En esquemas nuevos la columna ya queda nullable desde la migracion base.
+        // Este ajuste mantiene compatibilidad con instalaciones existentes.
+        $driver = Schema::getConnection()->getDriverName();
+
+        if ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE cotizacion_respuestas ALTER COLUMN cotizacion_producto_id DROP NOT NULL');
+            return;
+        }
+
+        if ($driver !== 'sqlite') {
+            Schema::table('cotizacion_respuestas', function (Blueprint $table) {
+                $table->foreignId('cotizacion_producto_id')->nullable()->change();
+            });
+        }
     }
 
     /**
@@ -31,4 +45,3 @@ return new class extends Migration
         });
     }
 };
-

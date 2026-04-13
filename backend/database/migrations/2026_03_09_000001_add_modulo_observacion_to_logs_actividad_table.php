@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::table('logs_actividad', function (Blueprint $table) {
             if (!Schema::hasColumn('logs_actividad', 'modulo')) {
-                $table->string('modulo', 80)->nullable()->after('accion');
+                $table->string('modulo', 80)->nullable();
                 $table->index('modulo');
             }
 
             if (!Schema::hasColumn('logs_actividad', 'observacion')) {
-                $table->text('observacion')->nullable()->after('datos_nuevos');
+                $table->text('observacion')->nullable();
             }
         });
     }

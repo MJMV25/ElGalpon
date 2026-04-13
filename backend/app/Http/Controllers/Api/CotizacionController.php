@@ -304,9 +304,11 @@ class CotizacionController extends Controller
 
         foreach ($cotizacion->proveedores as $cotizacionProveedor) {
             $proveedor = $cotizacionProveedor->proveedor;
+            $emailDestino = $proveedor->email_comercial;
+            $nombreProveedor = $proveedor->nombre_empresa;
 
-            if (!$proveedor->email) {
-                $errores[] = "El proveedor {$proveedor->nombre} no tiene email";
+            if (!$emailDestino) {
+                $errores[] = "El proveedor {$nombreProveedor} no tiene email comercial";
                 continue;
             }
 
@@ -315,9 +317,8 @@ class CotizacionController extends Controller
                 $token = $cotizacionProveedor->generarToken();
                 $urlRespuesta = $cotizacionProveedor->getUrlRespuestaPublica();
 
-                // Usar queue() en lugar de send() para no bloquear la respuesta
-                Mail::to($proveedor->email)->queue(new CotizacionSolicitudMail(
-                    $proveedor->nombre,
+                Mail::to($emailDestino)->send(new CotizacionSolicitudMail(
+                    $nombreProveedor,
                     $cotizacion->numero,
                     $productosData,
                     $cotizacion->fecha_limite->format('d/m/Y'),

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('movimientos_inventario', function (Blueprint $table) {
-            $table->string('recibido_por', 120)->nullable()->after('motivo');
+            $table->string('recibido_por', 120)->nullable();
         });
     }
 
@@ -26,4 +26,3 @@ return new class extends Migration
         });
     }
 };
-

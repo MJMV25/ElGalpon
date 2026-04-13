@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('cotizacion_proveedores', function (Blueprint $table) {
-            $table->string('token', 64)->unique()->nullable()->after('proveedor_id');
-            $table->timestamp('token_expira_en')->nullable()->after('token');
+            $table->string('token', 64)->unique()->nullable();
+            $table->timestamp('token_expira_en')->nullable();
 
             $table->index('token');
         });

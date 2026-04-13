@@ -14,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('password')->nullable()->after('email');
+            $table->string('password')->nullable();
         });
 
         // Inicializa contraseña temporal para usuarios existentes.

@@ -5,12 +5,14 @@ export interface CreateUserData {
   nombre: string;
   email: string;
   rol: 'admin' | 'empleado';
+  password?: string;
 }
 
 export interface UpdateUserData {
   nombre?: string;
   email?: string;
   rol?: 'admin' | 'empleado';
+  password?: string;
 }
 
 const usuariosService = {

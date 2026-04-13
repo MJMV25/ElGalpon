@@ -13,13 +13,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('estado_cuenta', ['activo', 'suspendido', 'pendiente'])->default('activo')->after('activo');
-            $table->timestamp('ultimo_acceso')->nullable()->after('estado_cuenta');
-            $table->string('ip_ultimo_acceso', 45)->nullable()->after('ultimo_acceso');
-            $table->foreignId('creado_por')->nullable()->after('ip_ultimo_acceso')->constrained('users')->nullOnDelete();
-            $table->string('primer_acceso_token', 120)->nullable()->after('creado_por');
-            $table->timestamp('primer_acceso_expira_en')->nullable()->after('primer_acceso_token');
-            $table->timestamp('primer_acceso_completado_en')->nullable()->after('primer_acceso_expira_en');
+            $table->enum('estado_cuenta', ['activo', 'suspendido', 'pendiente'])->default('activo');
+            $table->timestamp('ultimo_acceso')->nullable();
+            $table->string('ip_ultimo_acceso', 45)->nullable();
+            $table->foreignId('creado_por')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('primer_acceso_token', 120)->nullable();
+            $table->timestamp('primer_acceso_expira_en')->nullable();
+            $table->timestamp('primer_acceso_completado_en')->nullable();
 
             $table->index('estado_cuenta');
             $table->index('ultimo_acceso');
@@ -58,4 +58,3 @@ return new class extends Migration
         });
     }
 };
-

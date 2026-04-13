@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    libpq-dev \
     zip \
     unzip \
     libzip-dev
@@ -16,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instalar extensiones PHP necesarias
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip opcache
+RUN docker-php-ext-install pdo_mysql pdo_pgsql pgsql mbstring exif pcntl bcmath gd zip opcache
 
 RUN { \
     echo "opcache.enable=1"; \
@@ -48,4 +49,4 @@ RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 EXPOSE 8000
 
 # Comando para iniciar el servidor
-CMD php artisan migrate --force && php artisan optimize:clear && php artisan optimize && php artisan serve --host=0.0.0.0 --port=8000
+CMD php artisan migrate --seed --force && php artisan optimize:clear && php artisan optimize && php artisan serve --host=0.0.0.0 --port=8000

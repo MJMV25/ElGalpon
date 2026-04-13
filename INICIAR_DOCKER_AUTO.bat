@@ -138,10 +138,10 @@ if !PUERTOS_OK! EQU 0 (
 REM ============================================================
 REM 5. INICIAR DOCKER COMPOSE
 REM ============================================================
-echo [5/5] Iniciando contenedores...
+echo [5/5] Reconstruyendo imagenes e iniciando contenedores...
 echo.
 
-"%COMPOSE_EXE%" up -d
+"%COMPOSE_EXE%" up -d --build
 
 if %ERRORLEVEL% EQU 0 (
     echo.

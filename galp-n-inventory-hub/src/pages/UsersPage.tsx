@@ -27,6 +27,7 @@ const UsersPage = () => {
     nombre: '',
     email: '',
     rol: 'empleado' as 'admin' | 'empleado',
+    password: '',
   });
 
   const { user: currentUser } = useAuthStore();
@@ -70,13 +71,13 @@ const UsersPage = () => {
 
   const handleOpenNewModal = () => {
     setEditingUser(null);
-    setFormData({ nombre: '', email: '', rol: 'empleado' });
+    setFormData({ nombre: '', email: '', rol: 'empleado', password: '' });
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (user: Usuario) => {
     setEditingUser(user);
-    setFormData({ nombre: user.nombre, email: user.email, rol: user.rol });
+    setFormData({ nombre: user.nombre, email: user.email, rol: user.rol, password: '' });
     setIsModalOpen(true);
   };
 
@@ -88,7 +89,7 @@ const UsersPage = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingUser(null);
-    setFormData({ nombre: '', email: '', rol: 'empleado' });
+    setFormData({ nombre: '', email: '', rol: 'empleado', password: '' });
   };
 
   const handleCloseDeleteModal = () => {
@@ -105,6 +106,7 @@ const UsersPage = () => {
         await api.put(`/usuarios/${editingUser.id}`, {
           nombre: formData.nombre,
           rol: formData.rol,
+          ...(formData.password.trim() ? { password: formData.password } : {}),
         });
         toast.success('Usuario actualizado correctamente');
       } else {
@@ -350,6 +352,26 @@ const UsersPage = () => {
                   <option value="empleado">Empleado</option>
                   <option value="admin">Administrador</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  {editingUser ? 'Nueva contraseña' : 'Contraseña'}
+                </label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-3 py-2.5 sm:py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm sm:text-base"
+                  placeholder={editingUser ? 'Dejar en blanco para no cambiarla' : 'Mínimo 8 caracteres'}
+                  minLength={8}
+                  required={!editingUser}
+                />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {editingUser
+                    ? 'Si escribes una contraseña aquí, reemplazará la actual del usuario.'
+                    : 'Esta contraseña se usará en el primer paso del inicio de sesión.'}
+                </p>
               </div>
 
               {!editingUser && (

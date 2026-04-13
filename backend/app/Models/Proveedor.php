@@ -68,5 +68,20 @@ class Proveedor extends Model
     {
         return $query->where('activo', true);
     }
-}
 
+    /**
+     * Compatibilidad con referencias legacy a "nombre".
+     */
+    public function getNombreAttribute(): string
+    {
+        return $this->nombre_empresa;
+    }
+
+    /**
+     * Compatibilidad con referencias legacy a "email".
+     */
+    public function getEmailAttribute(): ?string
+    {
+        return $this->email_comercial ?: $this->email_administrativo;
+    }
+}

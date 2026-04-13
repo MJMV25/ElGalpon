@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
     environment:
       APP_NAME: "El GalpÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n"
-      APP_ENV: production
+      APP_ENV: docker
       APP_DEBUG: "false"
       APP_URL: http://localhost:8000
       DB_CONNECTION: mysql
@@ -46,16 +46,17 @@ services:
       MAIL_MAILER: smtp
       MAIL_HOST: smtp.gmail.com
       MAIL_PORT: 587
-      MAIL_USERNAME: samugj22@gmail.com
-      MAIL_PASSWORD: mzsyyvzuqhpyxost
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
       MAIL_ENCRYPTION: tls
-      MAIL_FROM_ADDRESS: samugj22@gmail.com
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
       AUTH_EXPOSE_OTP: "true"
       MAIL_FROM_NAME: "El GalpÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n"
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/var/www/html
+      - ./backend/.env.docker:/var/www/html/.env
       - backend_storage:/var/www/html/storage
     depends_on:
       mysql:

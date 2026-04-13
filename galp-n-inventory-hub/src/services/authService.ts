@@ -20,6 +20,7 @@ export interface AuthResponse {
 export interface LoginStepOneResponse {
   challenge_token: string;
   email: string;
+  debug_codigo?: string | null;
 }
 
 const authService = {

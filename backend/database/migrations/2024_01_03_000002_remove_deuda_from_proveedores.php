@@ -27,7 +27,7 @@ return new class extends Migration
     {
         // Restaurar columna deuda
         Schema::table('proveedores', function (Blueprint $table) {
-            $table->decimal('deuda', 12, 2)->default(0)->after('notas');
+            $table->decimal('deuda', 12, 2)->default(0);
         });
 
         // Restaurar tabla de pagos
@@ -44,4 +44,3 @@ return new class extends Migration
         });
     }
 };
-

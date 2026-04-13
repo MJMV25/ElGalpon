@@ -44,7 +44,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         isLoading: false,
       });
 
-      return { success: true, message: response.message || 'Codigo enviado al correo' };
+      const debugCode = response.data.debug_codigo;
+      const message = debugCode
+        ? `Codigo generado localmente: ${debugCode}`
+        : (response.message || 'Codigo enviado al correo');
+
+      return { success: true, message };
     } catch (error: any) {
       set({ isLoading: false });
       const message = error.response?.data?.message || error.message || 'Credenciales invalidas';

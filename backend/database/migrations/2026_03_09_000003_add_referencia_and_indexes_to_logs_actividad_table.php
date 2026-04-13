@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('logs_actividad', function (Blueprint $table) {
             if (!Schema::hasColumn('logs_actividad', 'referencia')) {
-                $table->string('referencia', 150)->nullable()->after('modelo_id');
+                $table->string('referencia', 150)->nullable();
                 $table->index('referencia');
             }
 
@@ -40,4 +40,3 @@ return new class extends Migration
         });
     }
 };
-

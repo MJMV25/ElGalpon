@@ -50,7 +50,7 @@ return new class extends Migration
         Schema::create('cotizacion_respuestas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('cotizacion_proveedor_id')->constrained('cotizacion_proveedores')->onDelete('cascade');
-            $table->foreignId('cotizacion_producto_id')->constrained('cotizacion_productos')->onDelete('cascade');
+            $table->foreignId('cotizacion_producto_id')->nullable()->constrained('cotizacion_productos')->onDelete('cascade');
             $table->decimal('precio_unitario', 12, 2);
             $table->integer('cantidad_disponible')->nullable();
             $table->integer('tiempo_entrega_dias')->nullable();
@@ -70,4 +70,3 @@ return new class extends Migration
         Schema::dropIfExists('cotizaciones');
     }
 };
-

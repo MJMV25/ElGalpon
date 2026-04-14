@@ -98,9 +98,7 @@ class AuthController extends Controller
 
         if (!$mostrarCodigoEnRespuesta) {
             try {
-                dispatch(function () use ($email, $codigo, $user) {
-                    Mail::to($email)->send(new VerificationCodeMail($codigo, $user->nombre));
-                })->afterResponse();
+                Mail::to($email)->send(new VerificationCodeMail($codigo, $user->nombre));
             } catch (\Throwable $e) {
                 Cache::forget('login-challenge:' . $challengeToken);
                 Log::error('Error al enviar email', [
